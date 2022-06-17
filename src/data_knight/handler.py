@@ -28,8 +28,11 @@ def lambda_handler(event, _context):
             findings_dict = string_parser.transform_json(json_contents)
             vetted_findings = string_parser.parse_findings(findings_dict)
 
-            print(vetted_findings)
-    else:
-        print("Ignoring...")
+            # Start denying services for everything
+            if vetted_findings['severity'].lower() == "high":
+                # Start the block public access to the bucket
+                bucket_name = vetted_findings['bucket_name']
+                s3_service.block_public_access(bucket_name)
+                s3_service.restrict_access_to_bucket(bucket_name)
 
     return event

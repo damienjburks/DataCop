@@ -30,11 +30,13 @@ class StringParser:
     def parse_findings(self, findings_dict):
         # Take the dictionary and grab the criticality
         self.logger.debug("Grabbing necessary information and parsing JSON: %s", findings_dict)
+        s3_bucket_name = findings_dict["resourcesAffected"]["s3Bucket"]["name"]
         s3_bucket_arn = findings_dict["resourcesAffected"]["s3Bucket"]["arn"]
         s3_object_path = findings_dict["resourcesAffected"]["s3Object"]["path"]
         severity = findings_dict["severity"]["description"]
 
         return {
+            "bucket_name":s3_bucket_name,
             "bucket_arn": s3_bucket_arn,
             "object_path": s3_object_path,
             "severity": severity
