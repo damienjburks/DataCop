@@ -3,9 +3,9 @@ import os
 
 import aws_cdk as cdk
 
-from templates.event_bridge_stack import EventBridgeStack
+from templates.core_stack import DataKnightCoreStack
 
 
 app = cdk.App()
-EventBridgeStack(app, "DataKnightEventBridgeStack")
+DataKnightCoreStack(app, "DataKnightCore")
 app.synth()
