@@ -19,7 +19,7 @@ cap between Macie and S3.
 ## Installation
 ---
 
-WIP
+WIP!
 
 ## Want to contribute?
 ---

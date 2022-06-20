@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-import os
-
+"""
+Module for running the CDK app and deploying all infrastructure.
+"""
 import aws_cdk as cdk
 
-from templates.core_stack import DataKnightCoreStack
-
+from templates.core_stack import DataCopCoreStack
 
 app = cdk.App()
-DataKnightCoreStack(app, "DataKnightCore")
+DataCopCoreStack(app, "DataCopCore")
 app.synth()

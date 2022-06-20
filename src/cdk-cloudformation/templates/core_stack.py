@@ -1,3 +1,6 @@
+"""
+Module for deploying all CDK resources.
+"""
 from aws_cdk import RemovalPolicy
 from aws_cdk import (
     Stack,
@@ -13,15 +16,22 @@ from aws_cdk import (
 from .constructs.lambda_packager import LambdaPackager
 
 
-class DataKnightCoreStack(Stack):
+class DataCopCoreStack(Stack):
+    """
+    This class contains the logic for deploying the following resources:
+    - S3 Buckets
+    - Lambda Function for DataCop
+    - Logic for Da
+    """
+
     def __init__(self, scope: App, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         # Package & create Lambda Function
-        lambda_package_dir = LambdaPackager("../data_knight").package()
+        lambda_package_dir = LambdaPackager("../data_cop").package()
         dk_lambda = _lambda.Function(
             self,
-            "DataKnightLambda",
+            "DataCopLambda",
             function_name="DataKnightLambda",
             runtime=_lambda.Runtime.PYTHON_3_9,
             timeout=Duration.minutes(10),
@@ -29,11 +39,25 @@ class DataKnightCoreStack(Stack):
             log_retention=logs.RetentionDays.INFINITE,
             code=_lambda.Code.from_asset(path=lambda_package_dir),
         )
+        dk_lambda.role.add_managed_policy(
+            iam.ManagedPolicy(
+                self,
+                "DataCopS3PolicyInline",
+                document=iam.PolicyDocument(
+                    statements=[
+                        iam.PolicyStatement(
+                            actions=["s3:PutBucketPolicy", "s3:PutBucketAcl", "s3:PutBucketPublicAccessBlock"],
+                            resources=["arn:aws:s3:::*"],
+                        )
+                    ]
+                ),
+            )
+        )
 
         # Create S3 Bucket w/ S3 Managed Encryption
         s3_bucket = s3.Bucket(
             self,
-            "DataKnightS3Bucket",
+            "DataCopS3Bucket",
             bucket_name="data-knight-findings-bucket",
             auto_delete_objects=True,
             removal_policy=RemovalPolicy.DESTROY,

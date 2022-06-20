@@ -3,10 +3,17 @@ Module for defining Lambda handler.
 """
 from s3_service import S3Service
 from session_config import BotoConfig
-from parser_ import FileParser, StringParser
+from parser_ import FileParser, MacieLogParser
 
 
 def lambda_handler(event, _context):
+    """
+    Handler that contains core logic for blocking S3 buckets
+    and parsing Macie results
+    :param event:
+    :param _context:
+    :return:
+    """
     boto_session = BotoConfig().get_session()
     if event["Records"][0]["eventName"] == "ObjectCreated:Put":
         s3_obj_key = event["Records"][0]["s3"]["object"]["key"]
@@ -24,14 +31,14 @@ def lambda_handler(event, _context):
             json_contents = file_util_obj.decompress(lambda_file_path)
 
             # Parsing JSON
-            string_parser = StringParser()
+            string_parser = MacieLogParser()
             findings_dict = string_parser.transform_json(json_contents)
             vetted_findings = string_parser.parse_findings(findings_dict)
 
             # Start denying services for everything
-            if vetted_findings['severity'].lower() == "high":
+            if vetted_findings["severity"].lower() == "high":
                 # Start the block public access to the bucket
-                bucket_name = vetted_findings['bucket_name']
+                bucket_name = vetted_findings["bucket_name"]
                 s3_service.block_public_access(bucket_name)
                 s3_service.restrict_access_to_bucket(bucket_name)
 
