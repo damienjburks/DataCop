@@ -46,7 +46,11 @@ class DataCopCoreStack(Stack):
                 document=iam.PolicyDocument(
                     statements=[
                         iam.PolicyStatement(
-                            actions=["s3:PutBucketPolicy", "s3:PutBucketAcl", "s3:PutBucketPublicAccessBlock"],
+                            actions=[
+                                "s3:PutBucketPolicy",
+                                "s3:PutBucketAcl",
+                                "s3:PutBucketPublicAccessBlock",
+                            ],
                             resources=["arn:aws:s3:::*"],
                         )
                     ]
