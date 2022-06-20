@@ -1,6 +1,6 @@
 # Data Cop
 
-<p align="center"><img src="./docs/images/logo.png" alt="DataCop Logo" width="200px" height="200px" /></p>
+<p align="center"><img src="./documentation/images/logo.png" alt="DataCop Logo" width="200px" height="200px" /></p>
 
 ---
 
@@ -25,4 +25,4 @@ WIP!
 ---
 
 If you want to contribute, please take a 
-look at the [Contributing Documentation](./docs/contributing.md).
+look at the [Contributing Documentation](./documentation/contributing.md).
