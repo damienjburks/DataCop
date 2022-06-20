@@ -12,14 +12,40 @@ to automatically block S3 buckets that contain PII or any classified information
 ---
 
 * Automatically provisioned infrastructure to bridge the 
-cap between Macie and S3.
+cap between Macie and S3 with AWS CDK
 * Configurable settings for bucket blocking (containment)
 * Event-driven S3 bucket blocking (containment)
 
-## Installation
+## Setup & Installation
+---
+### Requirements
+
+Data Cop is broken up into two parts and requires the following technologies
+to be installed:
+
+1. Python 3.8+
+
+Please install these before proceeding.
+
+### Install
+
+The installation process for Data Cop is fairly straightforward. Please follow the steps
+outlined below:
+
+1. Create and activate your virtual environment:
+
+    ![Create/Activate Virtual Environment](./documentation/images/create_activate_venv.gif)
+
+2. Install the dependencies:
+
+    ![Installing Dependencies](./documentation/images/install_deps.gif)
+
+Once you've installed those requirements, you're good to go.
+
+## Deployment
 ---
 
-WIP!
+WIP
 
 ## Want to contribute?
 ---
