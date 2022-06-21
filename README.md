@@ -20,12 +20,10 @@ cap between Macie and S3 with AWS CDK
 ---
 ### Requirements
 
-DataCop is broken up into two parts and requires the following technologies
-to be installed:
+In order to install and deploy DataCop, you need
+to ensure that you have the following installed:
 
 1. Python 3.8+
-
-Please install these before proceeding.
 
 ### Install
 
