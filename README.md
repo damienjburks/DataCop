@@ -33,19 +33,36 @@ The installation process for Data Cop is fairly straightforward. Please follow t
 outlined below:
 
 1. Create and activate your virtual environment:
-
+    
+    #### Figure 1. Create/Activate Virtual Environment
     ![Create/Activate Virtual Environment](./documentation/images/create_activate_venv.gif)
 
 2. Install the dependencies:
 
+    #### Figure 2: Install Python Dependencies
     ![Installing Dependencies](./documentation/images/install_deps.gif)
 
-Once you've installed those requirements, you're good to go.
+Once you've installed those requirements, you're good to deploy the application.
 
 ## Deployment
 ---
 
-WIP
+For deployment, Data Cop utilizes the `invoke` command. If you would
+like to learn more about invoke, please refer to this document: [Invoke Docs](https://www.pyinvoke.org).
+
+Assuming you have activated your virtual environment, 
+run the following command to deploy the CDK stack:
+    
+#### Figure 3. Deploying Data Cop
+```bash
+(.env) $ invoke cdk-deploy
+```
+
+>**NOTE:** This command will bootstrap the default AWS account & profile.
+Afterward, it will deploy everything with `cdk deploy`.
+
+To review the results, please log into your AWS account and verify
+that the following CloudFormation Template exists: `DataCopCoreStack`.
 
 ## Want to contribute?
 ---
