@@ -8,7 +8,7 @@ def lint(c):
     :param c:
     :return:
     """
-    c.run("pylint src/lambda")
+    c.run("pylint src/data_cop")
 
 
 @task

@@ -1,5 +1,5 @@
 """
-Module for deploying all CDK resources.
+Module for deploying all CDK core resources.
 """
 from aws_cdk import RemovalPolicy
 from aws_cdk import (
@@ -21,7 +21,6 @@ class DataCopCoreStack(Stack):
     This class contains the logic for deploying the following resources:
     - S3 Buckets
     - Lambda Function for DataCop
-    - Logic for Da
     """
 
     def __init__(self, scope: App, id: str, **kwargs) -> None:
@@ -82,3 +81,5 @@ class DataCopCoreStack(Stack):
             resources=[s3_bucket.bucket_arn, f"{s3_bucket.bucket_arn}/*"],
         )
         s3_bucket.add_to_resource_policy(default_bucket_policy)
+
+        # TODO: Create step function that will block the s3 bucket and cache the findings
