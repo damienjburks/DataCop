@@ -8,7 +8,7 @@ DataCop is an custom AWS framework that mitigates the
 potential of vulnerable S3 buckets. Reliant on AWS Macie results, DataCop enables professionals that leverage AWS Macie
 to automatically block S3 buckets that contain PII or any classified information.
 
-## Features
+Features
 ---
 
 * Automatically provisioned infrastructure to bridge the 
@@ -16,8 +16,9 @@ cap between Macie and S3 with AWS CDK
 * Configurable settings for bucket blocking (containment)
 * Event-driven S3 bucket blocking (containment)
 
-## Setup & Installation
+Setup & Installation
 ---
+
 ### Requirements
 
 In order to install and deploy DataCop, you need
@@ -42,7 +43,7 @@ outlined below:
 
 Once you've installed those requirements, you're good to deploy the application.
 
-## Deployment
+Deployment
 ---
 
 For deployment, DataCop utilizes the `invoke` command. If you would
@@ -62,7 +63,7 @@ Afterward, it will deploy everything with `cdk deploy`.
 To review the results, please log into your AWS account and verify
 that the following CloudFormation Template exists: `DataCopCoreStack`.
 
-## Want to contribute?
+Want to contribute?
 ---
 
 If you want to contribute, please take a 
