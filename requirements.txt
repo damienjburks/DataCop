@@ -12,7 +12,7 @@ docopt==0.6.2
 exceptiongroup==1.0.0rc8
 invoke==1.7.1
 isort==5.10.1
-jmespath==1.0.0
+jmespath==1.0.1
 jsii==1.61.0
 lazy-object-proxy==1.7.1
 mccabe==0.7.0
