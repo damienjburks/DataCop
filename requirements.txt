@@ -21,7 +21,7 @@ pathspec==0.9.0
 platformdirs==2.5.2
 publication==0.0.3
 Pygments==2.12.0
-pylint==2.14.3
+pylint==2.14.4
 python-dateutil==2.8.2
 s3transfer==0.6.0
 six==1.16.0
