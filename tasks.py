@@ -1,3 +1,6 @@
+import os
+import boto3
+
 from invoke import task
 
 
@@ -30,9 +33,23 @@ def format(c):
     """
     c.run("python -m black .")
 
+@task
+def pre_setup(c):
+    # Configure environment
+    account_id = boto3.client('sts').get_caller_identity().get('Account')
+    s3_bucket_name = f"datacop-findings-{account_id}"
+    os.environ['S3_BUCKET_NAME'] = s3_bucket_name
 
 @task
-def cdk_deploy(c):
+def post_setup(c):
+    # Configure your S3 buckets
+    s3_bucket_name = os.environ['S3_BUCKET_NAME']
+    c.run(
+        f"python ./src/macie_setup.py {s3_bucket_name}"
+    )
+
+@task(pre=[pre_setup], post=[post_setup])
+def deploy(c):
     """
     Bootstraps and deploys the CDK templates to AWS
     :param c:
@@ -42,9 +59,8 @@ def cdk_deploy(c):
         "cd src/cdk-cloudformation && cdk bootstrap && cdk deploy --require-approval=never"
     )
 
-
 @task
-def cdk_destroy(c):
+def destroy(c):
     """
     Destroys the CDK templates within AWS
     :param c:

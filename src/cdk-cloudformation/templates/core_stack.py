@@ -1,6 +1,7 @@
 """
 Module for deploying all CDK core resources.
 """
+import os
 from aws_cdk import RemovalPolicy
 from aws_cdk import (
     Stack,
@@ -61,7 +62,7 @@ class DataCopCoreStack(Stack):
         s3_bucket = s3.Bucket(
             self,
             "DataCopS3Bucket",
-            bucket_name="data-knight-findings-bucket",
+            bucket_name=os.environ['S3_BUCKET_NAME'],
             auto_delete_objects=True,
             removal_policy=RemovalPolicy.DESTROY,
             encryption=s3.BucketEncryption.S3_MANAGED,
@@ -81,5 +82,3 @@ class DataCopCoreStack(Stack):
             resources=[s3_bucket.bucket_arn, f"{s3_bucket.bucket_arn}/*"],
         )
         s3_bucket.add_to_resource_policy(default_bucket_policy)
-
-        # TODO: Create step function that will block the s3 bucket and cache the findings
