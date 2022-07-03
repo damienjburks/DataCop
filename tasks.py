@@ -91,7 +91,7 @@ def destroy(c):
     c.run("cd src/cdk-cloudformation && cdk destroy --force --all")
 
 
-@task(pre=[pre_setup])
+@task(pre=[pre_setup], post=[disable_macie])
 def destroy_and_disable(c):
     """
     Destroys the CDK templates and disables Macie

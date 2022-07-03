@@ -2,6 +2,7 @@
 This is a standalone script that will check to see if Macie is configured or not.
 This is supposed to be executed prior to deployment.
 """
+import sys
 import time
 import os
 
@@ -101,6 +102,14 @@ def postdeploy():
     macie.configure_classification_report()
 
 
+def postdestroy():
+    macie = MacieSetup()
+    macie.disable_macie()
+
+
 if __name__ == "__main__":
-    predeploy()
-    postdeploy()
+    if "true" in sys.argv:
+        postdestroy()
+    else:
+        predeploy()
+        postdeploy()
