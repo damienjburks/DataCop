@@ -65,7 +65,7 @@ class DataCopCoreStack(Stack):
             "DataCopKMSKey",
             alias=os.environ["KMS_KEY_ALIAS"],
             enable_key_rotation=True,
-            removal_policy=RemovalPolicy.DESTROY
+            removal_policy=RemovalPolicy.DESTROY,
         )
         kms_key.add_to_resource_policy(
             iam.PolicyStatement(

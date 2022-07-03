@@ -48,6 +48,7 @@ def pre_setup(c):
     os.environ["S3_BUCKET_NAME"] = s3_bucket_name
     os.environ["KMS_KEY_ALIAS"] = kms_key_alias
 
+
 @task
 def post_setup(c):
     """
@@ -57,6 +58,7 @@ def post_setup(c):
     """
     c.run(f"python ./src/macie_setup.py")
 
+
 @task
 def disable_macie(c):
     """
@@ -65,6 +67,7 @@ def disable_macie(c):
     :return:
     """
     c.run(f"python ./src/macie_setup.py true")
+
 
 @task(pre=[pre_setup], post=[post_setup])
 def deploy(c):
@@ -86,6 +89,7 @@ def destroy(c):
     :return:
     """
     c.run("cd src/cdk-cloudformation && cdk destroy --force --all")
+
 
 @task(pre=[pre_setup])
 def destroy_and_disable(c):

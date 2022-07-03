@@ -25,14 +25,12 @@ class MacieSetup:
         self.logger.info("Configuring classification report: %s", s3_bucket_name)
 
         # Deriving KMS key
-        kms_key_aliases = self.kms_client.list_aliases()['Aliases']
+        kms_key_aliases = self.kms_client.list_aliases()["Aliases"]
         for alias in kms_key_aliases:
-            if alias['AliasName'] == kms_key_alias:
-                key_id = alias['TargetKeyId']
+            if alias["AliasName"] == kms_key_alias:
+                key_id = alias["TargetKeyId"]
 
-        key_arn = self.kms_client.describe_key(
-            KeyId=key_id
-        )['KeyMetadata']['Arn']
+        key_arn = self.kms_client.describe_key(KeyId=key_id)["KeyMetadata"]["Arn"]
 
         response = self.macie_client.put_classification_export_configuration(
             configuration={
@@ -77,6 +75,7 @@ class MacieSetup:
 
     def configure_s3_bucket(self):
         pass
+
 
 def predeploy():
     macie = MacieSetup()
