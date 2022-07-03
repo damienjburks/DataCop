@@ -11,6 +11,7 @@ from aws_cdk import (
     aws_logs as logs,
     aws_s3 as s3,
     aws_iam as iam,
+    aws_kms as kms,
     aws_s3_notifications as s3_notifications,
 )
 
@@ -58,11 +59,27 @@ class DataCopCoreStack(Stack):
             )
         )
 
+        # Create KMS key and add policy for macie
+        kms_key = kms.Key(
+            self,
+            "DataCopKMSKey",
+            alias=os.environ["KMS_KEY_ALIAS"],
+            enable_key_rotation=True,
+            removal_policy=RemovalPolicy.DESTROY
+        )
+        kms_key.add_to_resource_policy(
+            iam.PolicyStatement(
+                principals=[iam.ServicePrincipal("macie.amazonaws.com")],
+                actions=["kms:GenerateDataKey", "kms:Encrypt"],
+                resources=["*"],
+            )
+        )
+
         # Create S3 Bucket w/ S3 Managed Encryption
         s3_bucket = s3.Bucket(
             self,
             "DataCopS3Bucket",
-            bucket_name=os.environ['S3_BUCKET_NAME'],
+            bucket_name=os.environ["S3_BUCKET_NAME"],
             auto_delete_objects=True,
             removal_policy=RemovalPolicy.DESTROY,
             encryption=s3.BucketEncryption.S3_MANAGED,

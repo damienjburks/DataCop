@@ -33,20 +33,38 @@ def format(c):
     """
     c.run("python -m black .")
 
+
 @task
 def pre_setup(c):
-    # Configure environment
-    account_id = boto3.client('sts').get_caller_identity().get('Account')
+    """
+    Configures environment deploying infrastructure
+    :param c:
+    :return:
+    """
+    account_id = boto3.client("sts").get_caller_identity().get("Account")
     s3_bucket_name = f"datacop-findings-{account_id}"
-    os.environ['S3_BUCKET_NAME'] = s3_bucket_name
+    kms_key_alias = "alias/data-cop-kms-key"
+
+    os.environ["S3_BUCKET_NAME"] = s3_bucket_name
+    os.environ["KMS_KEY_ALIAS"] = kms_key_alias
 
 @task
 def post_setup(c):
-    # Configure your S3 buckets
-    s3_bucket_name = os.environ['S3_BUCKET_NAME']
-    c.run(
-        f"python ./src/macie_setup.py {s3_bucket_name}"
-    )
+    """
+    Executes post setup configuration steps for Macie
+    :param c:
+    :return:
+    """
+    c.run(f"python ./src/macie_setup.py")
+
+@task
+def disable_macie(c):
+    """
+    Disables macie for the account.
+    :param c:
+    :return:
+    """
+    c.run(f"python ./src/macie_setup.py true")
 
 @task(pre=[pre_setup], post=[post_setup])
 def deploy(c):
@@ -59,10 +77,21 @@ def deploy(c):
         "cd src/cdk-cloudformation && cdk bootstrap && cdk deploy --require-approval=never"
     )
 
-@task
+
+@task(pre=[pre_setup])
 def destroy(c):
     """
     Destroys the CDK templates within AWS
+    :param c:
+    :return:
+    """
+    c.run("cd src/cdk-cloudformation && cdk destroy --force --all")
+
+@task(pre=[pre_setup])
+def destroy_and_disable(c):
+    """
+    Destroys the CDK templates and disables Macie
+    for the AWS Account.
     :param c:
     :return:
     """
