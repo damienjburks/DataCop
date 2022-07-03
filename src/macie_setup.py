@@ -11,13 +11,15 @@ from data_cop.logging_config import LoggerConfig
 
 class MacieSetup:
     """
-    Class for configuring Macie
+    Class for configuring Macie and S3 after the CFTs
+    has been deployed.
     """
 
     def __init__(self):
         self.logger = LoggerConfig().configure(__name__)
         self.macie_client = BotoConfig().get_session().client("macie2")
         self.kms_client = BotoConfig().get_session().client("kms")
+        self.s3_client = BotoConfig().get_session().client("s3")
 
     def configure_classification_report(self):
         s3_bucket_name = os.environ["S3_BUCKET_NAME"]
@@ -32,7 +34,7 @@ class MacieSetup:
 
         key_arn = self.kms_client.describe_key(KeyId=key_id)["KeyMetadata"]["Arn"]
 
-        response = self.macie_client.put_classification_export_configuration(
+        self.macie_client.put_classification_export_configuration(
             configuration={
                 "s3Destination": {
                     "bucketName": s3_bucket_name,
@@ -74,7 +76,18 @@ class MacieSetup:
         self.logger.info("Macie has been disabled for this account.")
 
     def configure_s3_bucket(self):
-        pass
+        self.s3_client.put_public_access_block(
+            Bucket=os.environ["S3_BUCKET_NAME"],
+            PublicAccessBlockConfiguration={
+                "BlockPublicAcls": True,
+                "IgnorePublicAcls": True,
+                "BlockPublicPolicy": True,
+                "RestrictPublicBuckets": True,
+            },
+        )
+        self.logger.info(
+            "Blocked public access to bucket: %s", os.environ["S3_BUCKET_NAME"]
+        )
 
 
 def predeploy():
@@ -84,6 +97,7 @@ def predeploy():
 
 def postdeploy():
     macie = MacieSetup()
+    macie.configure_s3_bucket()
     macie.configure_classification_report()
 
 
