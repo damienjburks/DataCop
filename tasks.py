@@ -100,3 +100,13 @@ def destroy_and_disable(c):
     :return:
     """
     c.run("cd src/cdk-cloudformation && cdk destroy --force --all")
+
+
+@task
+def unit_test(c):
+    """
+    Executes unit test cases
+    :param c:
+    :return:
+    """
+    pass
