@@ -5,7 +5,7 @@ import json
 
 import botocore.exceptions
 from botocore.exceptions import ClientError
-from logging_config import LoggerConfig
+from data_cop.logging_config import LoggerConfig
 
 DENY_ALL_POLICY = {
     "Version": "2012-10-17",

@@ -1,9 +1,9 @@
 """
 Module for defining Lambda handler.
 """
-from s3_service import S3Service
-from session_config import BotoConfig
-from parser_ import FileParser, MacieLogParser
+from data_cop.s3_service import S3Service
+from data_cop.session_config import BotoConfig
+from data_cop.parser_ import FileParser, MacieLogParser
 
 
 def lambda_handler(event, _context):
