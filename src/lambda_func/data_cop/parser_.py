@@ -5,7 +5,7 @@ Module with parsing classes (File/String/Macie)
 import gzip
 import json
 
-from logging_config import LoggerConfig
+from src.lambda_func.data_cop.logging_config import LoggerConfig
 
 
 class FileParser:

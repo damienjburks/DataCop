@@ -5,7 +5,7 @@ import json
 
 import botocore.exceptions
 from botocore.exceptions import ClientError
-from logging_config import LoggerConfig
+from src.lambda_func.data_cop.logging_config import LoggerConfig
 
 DENY_ALL_POLICY = {
     "Version": "2012-10-17",
@@ -93,6 +93,8 @@ class S3Service:
         self.logger.debug("Blocked public access to bucket: %s", bucket_name)
         self.logger.debug(response)
 
+        return response
+
     def put_private_acl(self, bucket_name):
         """
         Attaches private ACL to S3 bucket
@@ -104,3 +106,5 @@ class S3Service:
         )
         self.logger.debug("Attached private ACL to bucket: %s", bucket_name)
         self.logger.debug(response)
+
+        return response
