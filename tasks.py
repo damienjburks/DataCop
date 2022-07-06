@@ -109,4 +109,4 @@ def test(c):
     :param c:
     :return:
     """
-    c.run("pytest -s tests/")
+    c.run("pytest tests/")
