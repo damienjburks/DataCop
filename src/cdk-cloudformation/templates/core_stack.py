@@ -29,11 +29,11 @@ class DataCopCoreStack(Stack):
         super().__init__(scope, id, **kwargs)
 
         # Package & create Lambda Function
-        lambda_package_dir = LambdaPackager("../data_cop").package()
+        lambda_package_dir = LambdaPackager("../lambda_func").package()
         dk_lambda = _lambda.Function(
             self,
             "DataCopLambda",
-            function_name="DataKnightLambda",
+            function_name="DataCopLambda",
             runtime=_lambda.Runtime.PYTHON_3_9,
             timeout=Duration.minutes(10),
             handler="handler.lambda_handler",

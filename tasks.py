@@ -11,7 +11,7 @@ def lint(c):
     :param c:
     :return:
     """
-    c.run("pylint src/data_cop")
+    c.run("python -m pylint src")
 
 
 @task
@@ -103,10 +103,10 @@ def destroy_and_disable(c):
 
 
 @task
-def unit_test(c):
+def test(c):
     """
     Executes unit test cases
     :param c:
     :return:
     """
-    pass
+    c.run("pytest -s tests/")

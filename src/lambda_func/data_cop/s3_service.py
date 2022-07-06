@@ -5,7 +5,7 @@ import json
 
 import botocore.exceptions
 from botocore.exceptions import ClientError
-from data_cop.logging_config import LoggerConfig
+from logging_config import LoggerConfig
 
 DENY_ALL_POLICY = {
     "Version": "2012-10-17",
@@ -41,19 +41,25 @@ class S3Service:
         self.logger = LoggerConfig().configure(type(self).__name__)
 
     def download_file(self, s3_key, s3_bucket_name, file_name):
+        """
+        Downloads file from S3
+        """
         try:
             self.logger.debug("Downloading S3 key: %s", s3_key)
             self.s3_resource.Bucket(s3_bucket_name).download_file(s3_key, file_name)
             self.logger.debug("Downloaded S3 file, %s, successfully!", file_name)
-
-            return file_name
         except ClientError as c_err:
             if c_err.response["Error"]["Code"] == "404":
                 print("This object doesn't exist. Please advise.")
             else:
-                raise
+                raise c_err
+
+        return file_name
 
     def restrict_access_to_bucket(self, bucket_name):
+        """
+        Attaches DENY ALL Policy to the S3 bucket
+        """
         self.logger.debug("Restricting access to this bucket: %s", bucket_name)
 
         bucket_policy = json.dumps(DENY_ALL_POLICY).replace("bucket_name", bucket_name)
@@ -71,6 +77,9 @@ class S3Service:
             self.logger.warning("Unable to attach deny all bucket policy: %s", str(err))
 
     def block_public_access(self, bucket_name):
+        """
+        Blocks all public access to the s3 bucket
+        """
         self.logger.debug("Blocking public access to bucket: %s", bucket_name)
         response = self.s3_client.put_public_access_block(
             Bucket=bucket_name,
@@ -85,6 +94,9 @@ class S3Service:
         self.logger.debug(response)
 
     def put_private_acl(self, bucket_name):
+        """
+        Attaches private ACL to S3 bucket
+        """
         self.logger.debug("Attaching private ACL to bucket: %s", bucket_name)
         response = self.s3_client.put_bucket_acl(
             ACL="private",

@@ -5,7 +5,7 @@ Module with parsing classes (File/String/Macie)
 import gzip
 import json
 
-from data_cop.logging_config import LoggerConfig
+from logging_config import LoggerConfig
 
 
 class FileParser:
@@ -17,7 +17,10 @@ class FileParser:
         self.logger = LoggerConfig().configure(type(self).__name__)
 
     def decompress(self, file_path):
-        json_data = None
+        """
+        Functions that unzips the file from macie and reads
+        the data.
+        """
         self.logger.debug("Decompressing file and getting JSON file: %s", file_path)
         with gzip.open(file_path, "rb") as json_file:
             json_data = json_file.read().decode()
@@ -34,10 +37,17 @@ class MacieLogParser:
         self.logger = LoggerConfig().configure(type(self).__name__)
 
     def transform_json(self, json_str):
+        """
+        This function transforms the JSON string
+        """
         transformed_json = json.loads(json_str)
         return transformed_json
 
     def parse_findings(self, findings_dict):
+        """
+        This function parses the findings and returns
+        the json object of the buckets that are flagged.
+        """
         # Take the dictionary and grab the criticality
         self.logger.debug(
             "Grabbing necessary information and parsing JSON: %s", findings_dict

@@ -15,4 +15,7 @@ class BotoConfig:
 
     @staticmethod
     def get_session():
+        """
+        Returns default boto session
+        """
         return boto3.Session()

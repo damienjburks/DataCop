@@ -14,6 +14,9 @@ class LoggerConfig:
 
     @staticmethod
     def configure(class_name):
+        """
+        Configures logger
+        """
         logger = logging.getLogger(class_name)
         handler = logging.StreamHandler()
         handler.setLevel(logging.DEBUG)

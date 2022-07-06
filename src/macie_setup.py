@@ -6,8 +6,8 @@ import sys
 import time
 import os
 
-from data_cop.session_config import BotoConfig
-from data_cop.logging_config import LoggerConfig
+from lambda_func.data_cop.session_config import BotoConfig
+from lambda_func.data_cop.logging_config import LoggerConfig
 
 
 class MacieSetup:
@@ -23,6 +23,10 @@ class MacieSetup:
         self.s3_client = BotoConfig().get_session().client("s3")
 
     def configure_classification_report(self):
+        """
+        Configures the classification report S3 bucket for Macie
+        :return:
+        """
         s3_bucket_name = os.environ["S3_BUCKET_NAME"]
         kms_key_alias = os.environ["KMS_KEY_ALIAS"]
         self.logger.info("Configuring classification report: %s", s3_bucket_name)
@@ -47,6 +51,10 @@ class MacieSetup:
         self.logger.info("Configured classification report successfully!")
 
     def enable_macie(self):
+        """
+        Function that enables macie for an account
+        :return:
+        """
         enabled = self.check_macie_status()
         if not enabled:
             self.logger.info("Macie is not enabled. Enabling now...")
@@ -57,12 +65,17 @@ class MacieSetup:
             enabled = self.check_macie_status()
             if not enabled:
                 raise Exception(
-                    "Macie is not enabled. Please enable it manually before continuing with deployment."
+                    """Macie is not enabled. Please enable it manually
+                    before continuing with deployment."""
                 )
         else:
             self.logger.info("Macie is already enabled!")
 
     def check_macie_status(self):
+        """
+        Checks the status of Macie. Whether it is enabled/disabled.
+        :return:
+        """
         is_enabled = True
 
         try:
@@ -73,10 +86,18 @@ class MacieSetup:
         return is_enabled
 
     def disable_macie(self):
+        """
+        Disables macie for an AWS account.
+        :return:
+        """
         self.macie_client.disable_macie()
         self.logger.info("Macie has been disabled for this account.")
 
     def configure_s3_bucket(self):
+        """
+        Configures the S3 bucket by blocking public access.
+        :return:
+        """
         self.s3_client.put_public_access_block(
             Bucket=os.environ["S3_BUCKET_NAME"],
             PublicAccessBlockConfiguration={
@@ -92,17 +113,30 @@ class MacieSetup:
 
 
 def predeploy():
+    """
+    Function to execute pre-deployment steps
+    :return:
+    """
     macie = MacieSetup()
     macie.enable_macie()
 
 
 def postdeploy():
+    """
+    Function to execute post-deployment steps
+    :return:
+    """
     macie = MacieSetup()
     macie.configure_s3_bucket()
     macie.configure_classification_report()
 
 
 def postdestroy():
+    """
+    Function that disables macie after
+    infrastructure has been destroyed.
+    :return:
+    """
     macie = MacieSetup()
     macie.disable_macie()
 

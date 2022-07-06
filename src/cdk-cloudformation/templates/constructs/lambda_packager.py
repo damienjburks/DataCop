@@ -1,3 +1,6 @@
+"""
+Module that contains logic to package the lambda function.
+"""
 import logging
 import shutil
 
@@ -15,6 +18,9 @@ class LambdaPackager:
         self.logging = logging.getLogger(__name__)
 
     def package(self):
+        """
+        Packages the lambda function
+        """
         self.logging.debug("Creating lambda for Data Cop...")
         shutil.make_archive(FILE_NAME, "zip", self.path)
         self.logging.debug("Created lambda successfully!")
