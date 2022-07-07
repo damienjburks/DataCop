@@ -20,7 +20,7 @@ invoke==1.7.1
 isort==5.10.1
 Jinja2==3.1.2
 jmespath==1.0.0
-jsii==1.60.1
+jsii==1.61.0
 lazy-object-proxy==1.7.1
 MarkupSafe==2.1.1
 mccabe==0.7.0
