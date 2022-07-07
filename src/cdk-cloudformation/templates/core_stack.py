@@ -14,6 +14,7 @@ from aws_cdk import (
     aws_kms as kms,
     aws_s3_notifications as s3_notifications,
 )
+from aws_cdk.aws_iam import Effect
 
 from .constructs.lambda_packager import LambdaPackager
 
@@ -40,24 +41,6 @@ class DataCopCoreStack(Stack):
             log_retention=logs.RetentionDays.INFINITE,
             code=_lambda.Code.from_asset(path=lambda_package_dir),
         )
-        dk_lambda.role.add_managed_policy(
-            iam.ManagedPolicy(
-                self,
-                "DataCopS3PolicyInline",
-                document=iam.PolicyDocument(
-                    statements=[
-                        iam.PolicyStatement(
-                            actions=[
-                                "s3:PutBucketPolicy",
-                                "s3:PutBucketAcl",
-                                "s3:PutBucketPublicAccessBlock",
-                            ],
-                            resources=["arn:aws:s3:::*"],
-                        )
-                    ]
-                ),
-            )
-        )
 
         # Create KMS key and add policy for macie
         kms_key = kms.Key(
@@ -71,8 +54,42 @@ class DataCopCoreStack(Stack):
         kms_key.add_to_resource_policy(
             iam.PolicyStatement(
                 principals=[iam.ServicePrincipal("macie.amazonaws.com")],
-                actions=["kms:GenerateDataKey", "kms:Encrypt"],
+                actions=["kms:GenerateDataKey*", "kms:Encrypt"],
                 resources=["*"],
+            )
+        )
+        kms_key.add_to_resource_policy(
+            iam.PolicyStatement(
+                principals=[iam.ServicePrincipal("lambda.amazonaws.com")],
+                actions=["kms:GenerateDataKey*", "kms:Encrypt", "kms:Decrypt"],
+                resources=["*"],
+            )
+        )
+
+        dk_lambda.role.add_managed_policy(
+            iam.ManagedPolicy(
+                self,
+                "DataCopS3PolicyInline",
+                document=iam.PolicyDocument(
+                    statements=[
+                        iam.PolicyStatement(
+                            sid="AllowPutActions",
+                            effect=Effect.ALLOW,
+                            actions=[
+                                "s3:PutBucketPolicy",
+                                "s3:PutBucketAcl",
+                                "s3:PutBucketPublicAccessBlock",
+                            ],
+                            resources=["arn:aws:s3:::*"],
+                        ),
+                        iam.PolicyStatement(
+                            sid="AllowDecryptionOfS3Objects",
+                            effect=Effect.ALLOW,
+                            actions=["kms:Decrypt"],
+                            resources=[kms_key.key_arn],
+                        ),
+                    ]
+                ),
             )
         )
 
