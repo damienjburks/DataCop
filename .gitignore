@@ -1,3 +1,4 @@
+.config.json
 *.swp
 package-lock.json
 __pycache__

@@ -1,9 +1,13 @@
 """
 Module for defining Lambda handler.
 """
+import json
+
 from data_cop.s3_service import S3Service
 from data_cop.session_config import BotoConfig
 from data_cop.parser_ import FileParser, MacieLogParser
+
+CONFIG_FILE_PATH = "./.config.json"
 
 
 def lambda_handler(event, _context):
@@ -15,6 +19,8 @@ def lambda_handler(event, _context):
     :return:
     """
     boto_session = BotoConfig().get_session()
+    config = load_config_file()
+
     if event["Records"][0]["eventName"] == "ObjectCreated:Put":
         s3_obj_key = event["Records"][0]["s3"]["object"]["key"]
         s3_bucket_name = event["Records"][0]["s3"]["bucket"]["name"]
@@ -28,18 +34,26 @@ def lambda_handler(event, _context):
 
             # Grabbing the json content
             file_util_obj = FileParser()
-            json_contents = file_util_obj.decompress(lambda_file_path)
+            data_list = file_util_obj.decompress(lambda_file_path)
 
             # Parsing JSON
             string_parser = MacieLogParser()
-            findings_dict = string_parser.transform_json(json_contents)
-            vetted_findings = string_parser.parse_findings(findings_dict)
+            for data in data_list:
+                findings_dict = string_parser.transform_json(data)
+                vetted_findings = string_parser.parse_findings(findings_dict)
 
-            # Start denying services for everything
-            if vetted_findings["severity"].lower() == "high":
-                # Start the block public access to the bucket
-                bucket_name = vetted_findings["bucket_name"]
-                s3_service.block_public_access(bucket_name)
-                s3_service.restrict_access_to_bucket(bucket_name)
+                # Start denying services
+                if vetted_findings["severity"].lower() == config["severity"]:
+                    # Start the block public access to the bucket
+                    bucket_name = vetted_findings["bucket_name"]
+                    s3_service.block_public_access(bucket_name)
+                    s3_service.restrict_access_to_bucket(bucket_name)
+                    break  # Do not iterate through the findings - the bucket has been blocked already
 
     return event
+
+
+def load_config_file():
+    config_file = open(CONFIG_FILE_PATH)
+    conf_json = json.load(config_file)
+    return conf_json

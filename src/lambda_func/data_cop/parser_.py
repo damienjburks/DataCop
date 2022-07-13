@@ -22,10 +22,12 @@ class FileParser:
         the data.
         """
         self.logger.debug("Decompressing file and getting JSON file: %s", file_path)
+        json_file_contents = []
         with gzip.open(file_path, "rb") as json_file:
-            json_data = json_file.read().decode()
-        self.logger.debug("Printing JSON data from file: %s", json_data)
-        return json_data
+            data = json_file.readline().decode()
+            json_file_contents.append(data)
+        self.logger.debug("Printing JSON data list: %s", json_file_contents)
+        return json_file_contents
 
 
 class MacieLogParser:

@@ -5,6 +5,7 @@ This is supposed to be executed prior to deployment.
 import sys
 import time
 import os
+import shutil
 
 from lambda_func.data_cop.session_config import BotoConfig
 from lambda_func.data_cop.logging_config import LoggerConfig
@@ -93,6 +94,15 @@ class MacieSetup:
         self.macie_client.disable_macie()
         self.logger.info("Macie has been disabled for this account.")
 
+    def create_config_json(self):
+        """
+        Creates the config json for the lambda
+        """
+        original_config_file = "config.json"
+        dest_config_file = "./src/lambda_func/.config.json"
+        shutil.copyfile(original_config_file, dest_config_file)
+        self.logger.info("Copied config.json into lambda function folder")
+
     def configure_s3_bucket(self):
         """
         Configures the S3 bucket by blocking public access.
@@ -119,6 +129,7 @@ def predeploy():
     """
     macie = MacieSetup()
     macie.enable_macie()
+    macie.create_config_json()
 
 
 def postdeploy():
