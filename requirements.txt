@@ -1,7 +1,7 @@
 astroid==2.11.6
 attrs==21.4.0
 aws-cdk-lib==2.27.0
-black==22.3.0
+black==22.6.0
 boto3==1.24.7
 botocore==1.27.7
 cattrs==22.1.0
@@ -20,7 +20,7 @@ invoke==1.7.1
 isort==5.10.1
 Jinja2==3.1.2
 jmespath==1.0.0
-jsii==1.60.1
+jsii==1.61.0
 lazy-object-proxy==1.7.1
 MarkupSafe==2.1.1
 mccabe==0.7.0
