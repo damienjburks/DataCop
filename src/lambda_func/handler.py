@@ -48,12 +48,15 @@ def lambda_handler(event, _context):
                     bucket_name = vetted_findings["bucket_name"]
                     s3_service.block_public_access(bucket_name)
                     s3_service.restrict_access_to_bucket(bucket_name)
-                    break  # Do not iterate through the findings - the bucket has been blocked already
+                    break
 
     return event
 
 
 def load_config_file():
-    config_file = open(CONFIG_FILE_PATH)
-    conf_json = json.load(config_file)
+    """Loads the config file"""
+    with open(CONFIG_FILE_PATH, 'rb') as f:
+        config_file = f.read().decode()
+        conf_json = json.load(config_file)
+
     return conf_json
