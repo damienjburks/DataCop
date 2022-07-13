@@ -55,7 +55,7 @@ def lambda_handler(event, _context):
 
 def load_config_file():
     """Loads the config file"""
-    with open(CONFIG_FILE_PATH, 'rb') as f:
+    with open(CONFIG_FILE_PATH, "rb") as f:
         config_file = f.read().decode()
         conf_json = json.load(config_file)
 
