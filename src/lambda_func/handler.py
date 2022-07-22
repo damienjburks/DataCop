@@ -1,13 +1,14 @@
 """
 Module for defining Lambda handler.
 """
-import json
-
 from data_cop.s3_service import S3Service
+from data_cop.email_service import EmailService
 from data_cop.session_config import BotoConfig
-from data_cop.parser_ import FileParser, MacieLogParser
+from data_cop.parser_ import FileParser, MacieLogParser, ConfigParser
+from data_cop.logging_config import LoggerConfig
 
-CONFIG_FILE_PATH = "./.config.json"
+# Log Configuration
+LOGGER = LoggerConfig().configure("handler")
 
 
 def lambda_handler(event, _context):
@@ -19,7 +20,7 @@ def lambda_handler(event, _context):
     :return:
     """
     boto_session = BotoConfig().get_session()
-    config = load_config_file()
+    config = ConfigParser().parse()
 
     if event["Records"][0]["eventName"] == "ObjectCreated:Put":
         s3_obj_key = event["Records"][0]["s3"]["object"]["key"]
@@ -38,6 +39,7 @@ def lambda_handler(event, _context):
 
             # Parsing JSON
             string_parser = MacieLogParser()
+            blocked_buckets = []
             for data in data_list:
                 findings_dict = string_parser.transform_json(data)
                 vetted_findings = string_parser.parse_findings(findings_dict)
@@ -48,15 +50,17 @@ def lambda_handler(event, _context):
                     bucket_name = vetted_findings["bucket_name"]
                     s3_service.block_public_access(bucket_name)
                     s3_service.restrict_access_to_bucket(bucket_name)
+                    blocked_buckets.append(bucket_name)
                     break
 
+            # Notify user
+            try:
+                email_address = config["email_address"]
+                email_service = EmailService(boto_session)
+                email_service.send_email(email_address, blocked_buckets)
+            except KeyError:
+                LOGGER.info(
+                    "Email address has not been defined - skipping email notification."
+                )
+
     return event
-
-
-def load_config_file():
-    """Loads the config file"""
-    with open(CONFIG_FILE_PATH, "rb") as f:
-        config_file = f.read().decode()
-        conf_json = json.load(config_file)
-
-    return conf_json

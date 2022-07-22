@@ -4,7 +4,7 @@
 
 ---
 
-DataCop is an custom AWS framework that mitigates the 
+DataCop is a custom AWS framework that mitigates the 
 potential of vulnerable S3 buckets. Reliant on AWS Macie results, DataCop enables professionals that leverage AWS Macie
 to automatically block S3 buckets that contain PII or any classified information.
 

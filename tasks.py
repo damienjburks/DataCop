@@ -45,9 +45,11 @@ def pre_setup(c):
     account_id = boto3.client("sts").get_caller_identity().get("Account")
     s3_bucket_name = f"datacop-findings-{account_id}"
     kms_key_alias = "alias/data-cop-kms-key"
+    ses_email = "dburksgtr@gmail.com"
 
     os.environ["S3_BUCKET_NAME"] = s3_bucket_name
     os.environ["KMS_KEY_ALIAS"] = kms_key_alias
+    os.environ["SES_EMAIL"] = ses_email
 
 
 @task
@@ -57,7 +59,7 @@ def post_setup(c):
     :param c:
     :return:
     """
-    c.run(f"python ./src/macie_setup.py")
+    c.run(f"python ./src/datacop_setup.py")
 
 
 @task
@@ -67,7 +69,7 @@ def disable_macie(c):
     :param c:
     :return:
     """
-    c.run(f"python ./src/macie_setup.py true")
+    c.run(f"python ./src/datacop_setup.py true")
 
 
 @task(pre=[pre_setup], post=[post_setup])

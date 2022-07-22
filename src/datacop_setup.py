@@ -2,16 +2,18 @@
 This is a standalone script that will check to see if Macie is configured or not.
 This is supposed to be executed prior to deployment.
 """
+import json
 import sys
 import time
 import os
 import shutil
 
+from botocore.exceptions import ClientError
 from lambda_func.data_cop.session_config import BotoConfig
 from lambda_func.data_cop.logging_config import LoggerConfig
 
 
-class MacieSetup:
+class DatacopSetup:
     """
     Class for configuring Macie and S3 after the CFTs
     has been deployed.
@@ -22,6 +24,54 @@ class MacieSetup:
         self.macie_client = BotoConfig().get_session().client("macie2")
         self.kms_client = BotoConfig().get_session().client("kms")
         self.s3_client = BotoConfig().get_session().client("s3")
+        self.ses_client = BotoConfig().get_session().client("ses")
+        self.account_id = (
+            BotoConfig()
+            .get_session()
+            .client("sts")
+            .get_caller_identity()
+            .get("Account")
+        )
+
+    def create_and_verify_email(self):
+        """
+        This function create and verify the main distro
+        for sending emails to DataCop.
+        :return:
+        """
+        try:
+            ses_email_name = os.environ["SES_EMAIL"]
+            ses_policy_name = f"DataCopSesPolicy{self.account_id}"
+            ses_identity = (
+                f"arn:aws:ses:us-east-1:{self.account_id}:identity/{ses_email_name}"
+            )
+
+            ses_policy = {
+                "Version": "2008-10-17",
+                "Statement": [
+                    {
+                        "Sid": "DataCopSesPolicy",
+                        "Effect": "Allow",
+                        "Principal": {"AWS": f"arn:aws:iam::{self.account_id}:root"},
+                        "Action": ["ses:SendEmail", "ses:SendRawEmail"],
+                        "Resource": ses_identity,
+                    }
+                ],
+            }
+            self.ses_client.put_identity_policy(
+                Identity=ses_email_name,
+                Policy=json.dumps(ses_policy),
+                PolicyName="DataCopSesPolicy",
+            )
+            self.ses_client.verify_email_identity(EmailAddress=ses_email_name)
+
+            return ses_policy_name, ses_identity
+
+        except ClientError as err:
+            self.logger.error("Cannot configure SES. Disabling moving forward.")
+            self.logger.error("Printing exception now: %s", str(err))
+
+        return None
 
     def configure_classification_report(self):
         """
@@ -127,9 +177,10 @@ def predeploy():
     Function to execute pre-deployment steps
     :return:
     """
-    macie = MacieSetup()
+    macie = DatacopSetup()
     macie.enable_macie()
     macie.create_config_json()
+    macie.create_and_verify_email()
 
 
 def postdeploy():
@@ -137,9 +188,9 @@ def postdeploy():
     Function to execute post-deployment steps
     :return:
     """
-    macie = MacieSetup()
-    macie.configure_s3_bucket()
-    macie.configure_classification_report()
+    setup = DatacopSetup()
+    setup.configure_s3_bucket()
+    setup.configure_classification_report()
 
 
 def postdestroy():
@@ -148,8 +199,8 @@ def postdestroy():
     infrastructure has been destroyed.
     :return:
     """
-    macie = MacieSetup()
-    macie.disable_macie()
+    setup = DatacopSetup()
+    setup.disable_macie()
 
 
 if __name__ == "__main__":

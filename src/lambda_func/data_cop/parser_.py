@@ -7,6 +7,8 @@ import json
 
 from data_cop.logging_config import LoggerConfig
 
+CONFIG_FILE_PATH = "./.config.json"
+
 
 class FileParser:
     """
@@ -65,3 +67,20 @@ class MacieLogParser:
             "object_path": s3_object_path,
             "severity": severity,
         }
+
+
+class ConfigParser:
+    """
+    This class is responsible for parsing the configuration
+    file
+    """
+
+    def __init__(self):
+        pass
+
+    def parse(self):
+        """Loads the config file"""
+        with open(CONFIG_FILE_PATH, "rb") as f:
+            config_file = f.read().decode()
+            conf_json = json.load(config_file)
+        return conf_json
