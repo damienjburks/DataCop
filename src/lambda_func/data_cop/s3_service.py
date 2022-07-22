@@ -81,19 +81,24 @@ class S3Service:
         Blocks all public access to the s3 bucket
         """
         self.logger.debug("Blocking public access to bucket: %s", bucket_name)
-        response = self.s3_client.put_public_access_block(
-            Bucket=bucket_name,
-            PublicAccessBlockConfiguration={
-                "BlockPublicAcls": True,
-                "IgnorePublicAcls": True,
-                "BlockPublicPolicy": True,
-                "RestrictPublicBuckets": True,
-            },
-        )
-        self.logger.debug("Blocked public access to bucket: %s", bucket_name)
-        self.logger.debug(response)
+        try:
+            response = self.s3_client.put_public_access_block(
+                Bucket=bucket_name,
+                PublicAccessBlockConfiguration={
+                    "BlockPublicAcls": True,
+                    "IgnorePublicAcls": True,
+                    "BlockPublicPolicy": True,
+                    "RestrictPublicBuckets": True,
+                },
+            )
+            self.logger.debug("Blocked public access to bucket: %s", bucket_name)
+            self.logger.debug(response)
 
-        return response
+            return response
+        except ClientError as err:
+            self.logger.warning("Unable to block public access: %s", str(err))
+
+        return None
 
     def put_private_acl(self, bucket_name):
         """

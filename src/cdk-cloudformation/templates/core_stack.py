@@ -78,6 +78,7 @@ class DataCopCoreStack(Stack):
                             actions=[
                                 "s3:PutBucketPolicy",
                                 "s3:PutBucketAcl",
+                                "s3:PutPublicAccessBlock",
                                 "s3:PutBucketPublicAccessBlock",
                             ],
                             resources=["arn:aws:s3:::*"],
@@ -88,6 +89,12 @@ class DataCopCoreStack(Stack):
                             actions=["kms:Decrypt"],
                             resources=[kms_key.key_arn],
                         ),
+                        iam.PolicyStatement(
+                            sid="SendEmailsUsingSES",
+                            effect=Effect.ALLOW,
+                            actions=["ses:SendEmail"],
+                            resources=["*"],
+                        )
                     ]
                 ),
             )

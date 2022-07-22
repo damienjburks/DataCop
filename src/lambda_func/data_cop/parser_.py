@@ -7,7 +7,7 @@ import json
 
 from data_cop.logging_config import LoggerConfig
 
-CONFIG_FILE_PATH = "./.config.json"
+CONFIG_FILE_PATH = ".config.json"
 
 
 class FileParser:
@@ -42,7 +42,7 @@ class MacieLogParser:
 
     def transform_json(self, json_str):
         """
-        This function transforms the JSON string
+        This function transforms the JSON string.
         """
         transformed_json = json.loads(json_str)
         return transformed_json
@@ -72,7 +72,7 @@ class MacieLogParser:
 class ConfigParser:
     """
     This class is responsible for parsing the configuration
-    file
+    file.
     """
 
     def __init__(self):
@@ -80,7 +80,6 @@ class ConfigParser:
 
     def parse(self):
         """Loads the config file"""
-        with open(CONFIG_FILE_PATH, "rb") as f:
-            config_file = f.read().decode()
-            conf_json = json.load(config_file)
+        with open(CONFIG_FILE_PATH, "r") as f:
+            conf_json = json.loads(f.read())
         return conf_json
