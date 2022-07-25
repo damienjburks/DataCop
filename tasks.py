@@ -1,4 +1,3 @@
-import json
 import os
 import boto3
 
@@ -71,14 +70,19 @@ def disable_macie(c):
 
 
 @task(pre=[pre_setup], post=[post_setup])
-def deploy(c):
+def deploy(c, email_address):
     """
     Bootstraps and deploys the CDK templates to AWS
-    :param c:
+    :param email_address: Necessary for SNS Topic Subscription
     :return:
     """
     c.run(
-        "cd src/cdk-cloudformation && cdk bootstrap && cdk deploy --require-approval=never"
+        f"cd src/cdk-cloudformation && "
+        f"cdk bootstrap && "
+        f"cdk deploy --require-approval=never "
+        f"--parameters bucketName={os.environ['S3_BUCKET_NAME']} "
+        f"--parameters kmsKeyAlias={os.environ['KMS_KEY_ALIAS']} "
+        f"--parameters snsEmailAddress={email_address}"
     )
 
 

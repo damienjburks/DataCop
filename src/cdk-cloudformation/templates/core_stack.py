@@ -2,7 +2,7 @@
 Module for deploying all CDK core resources.
 """
 import os
-from aws_cdk import RemovalPolicy
+from aws_cdk import RemovalPolicy, CfnParameter
 from aws_cdk import (
     Stack,
     App,
@@ -13,8 +13,13 @@ from aws_cdk import (
     aws_iam as iam,
     aws_kms as kms,
     aws_s3_notifications as s3_notifications,
+    aws_stepfunctions as sfn,
+    aws_stepfunctions_tasks as sfn_tasks,
+    aws_sns as sns,
 )
 from aws_cdk.aws_iam import Effect
+from aws_cdk.aws_logs import RetentionDays
+from aws_cdk.aws_sns_subscriptions import EmailSubscription
 
 from .constructs.lambda_packager import LambdaPackager
 
@@ -24,10 +29,32 @@ class DataCopCoreStack(Stack):
     This class contains the logic for deploying the following resources:
     - S3 Buckets
     - Lambda Function for DataCop
+    - Step Function & corresponding Log Group
+    - KMS Key
     """
 
     def __init__(self, scope: App, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
+
+        # Export Environment Variables to the CFT
+        BUCKET_NAME = CfnParameter(
+            self,
+            "bucketName",
+            type="String",
+            description="The name of the Amazon S3 bucket where uploaded files will be stored.",
+        ).value_as_string
+        KMS_KEY_ALIAS = CfnParameter(
+            self,
+            "kmsKeyAlias",
+            type="String",
+            description="The name of the Amazon KMS key alias.",
+        ).value_as_string
+        SUB_EMAIL_ADDRESS = CfnParameter(
+            self,
+            "snsEmailAddress",
+            type="String",
+            description="The email address that is subscription to the SNS topic.",
+        ).value_as_string
 
         # Package & create Lambda Function
         lambda_package_dir = LambdaPackager("../lambda_func").package()
@@ -46,7 +73,7 @@ class DataCopCoreStack(Stack):
         kms_key = kms.Key(
             self,
             "DataCopKMSKey",
-            alias=os.environ["KMS_KEY_ALIAS"],
+            alias=KMS_KEY_ALIAS,
             enable_key_rotation=True,
             removal_policy=RemovalPolicy.DESTROY,
             pending_window=Duration.days(7),
@@ -97,7 +124,7 @@ class DataCopCoreStack(Stack):
         s3_bucket = s3.Bucket(
             self,
             "DataCopS3Bucket",
-            bucket_name=os.environ["S3_BUCKET_NAME"],
+            bucket_name=BUCKET_NAME,
             auto_delete_objects=True,
             removal_policy=RemovalPolicy.DESTROY,
             encryption=s3.BucketEncryption.S3_MANAGED,
@@ -117,3 +144,54 @@ class DataCopCoreStack(Stack):
             resources=[s3_bucket.bucket_arn, f"{s3_bucket.bucket_arn}/*"],
         )
         s3_bucket.add_to_resource_policy(default_bucket_policy)
+
+        # Create Step Function w/ states
+        sfn_log_group = logs.LogGroup(
+            self,
+            "DataCopSfnLogGroup",
+            log_group_name="DataCopSfnLogGroup",
+            removal_policy=RemovalPolicy.DESTROY,
+            retention=RetentionDays.INFINITE,
+        )
+        send_error_report = sfn_tasks.LambdaInvoke(
+            self, "send_error_report", lambda_function=dk_lambda
+        )
+
+        determine_severity = sfn_tasks.LambdaInvoke(
+            self, "determine_severity", lambda_function=dk_lambda
+        )
+        block_bucket_boolean = sfn.Choice(self, "Block Bucket?")
+
+        block_s3_bucket = sfn_tasks.LambdaInvoke(
+            self, "block_s3_bucket", lambda_function=dk_lambda
+        ).add_catch(handler=send_error_report, result_path="$.exception")
+
+        send_report = sfn_tasks.LambdaInvoke(
+            self,
+            "send_report",
+            lambda_function=dk_lambda,
+        )
+        definition = determine_severity.next(
+            block_bucket_boolean.when(
+                sfn.Condition.string_equals("$.block_bucket", "true"),
+                block_s3_bucket.next(send_report),
+            )
+        )
+        sfn.StateMachine(
+            self,
+            "DataCopStepFunction",
+            state_machine_name="DataCop",
+            definition=definition,
+            logs=sfn.LogOptions(
+                destination=sfn_log_group,
+                include_execution_data=True,
+                level=sfn.LogLevel.ALL,
+            ),
+            timeout=Duration.minutes(5),
+        )
+
+        # SNS Topic Creation
+        datacop_topic = sns.Topic(self, "DataCopTopic")
+        datacop_topic.add_subscription(
+            EmailSubscription(SUB_EMAIL_ADDRESS)
+        )
