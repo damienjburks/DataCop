@@ -1,10 +1,11 @@
 """
 Module for defining Lambda handler.
 """
-import json
-
 from data_cop.session_config import BotoConfig
 from data_cop.ssm_service import SSMService
+from data_cop.s3_service import S3Service
+from data_cop.parser_ import FileParser, MacieLogParser
+
 
 def lambda_handler(event, _context):
     """
@@ -16,9 +17,9 @@ def lambda_handler(event, _context):
     """
     boto_session = BotoConfig().get_session()
     ssm_svc = SSMService(boto_session)
-    print(event)
-    print(ssm_svc.get_severity())
-    """if event["Records"][0]["eventName"] == "ObjectCreated:Put":        
+    severity = ssm_svc.get_severity()
+
+    if event["Records"][0]["eventName"] == "ObjectCreated:Put":        
         s3_obj_key = event["Records"][0]["s3"]["object"]["key"]
         s3_bucket_name = event["Records"][0]["s3"]["bucket"]["name"]
         if "jsonl.gz" in s3_obj_key:
@@ -40,11 +41,11 @@ def lambda_handler(event, _context):
                 vetted_findings = string_parser.parse_findings(findings_dict)
 
                 # Start denying services
-                if vetted_findings["severity"].lower() == config["severity"]:
+                if vetted_findings["severity"].lower() == severity:
                     # Start the block public access to the bucket
                     bucket_name = vetted_findings["bucket_name"]
                     s3_service.block_public_access(bucket_name)
                     s3_service.restrict_access_to_bucket(bucket_name)
-                    break"""
+                    break
 
     return event

@@ -194,11 +194,6 @@ class DataCopCoreStack(Stack):
             self, "send_error_report", lambda_function=dk_lambda
         )
 
-        determine_severity = sfn_tasks.LambdaInvoke(
-            self, "determine_severity", lambda_function=dk_lambda
-        )
-        block_bucket_boolean = sfn.Choice(self, "Block Bucket?")
-
         block_s3_bucket = sfn_tasks.LambdaInvoke(
             self, "block_s3_bucket", lambda_function=dk_lambda
         ).add_catch(handler=send_error_report, result_path="$.exception")
@@ -208,12 +203,7 @@ class DataCopCoreStack(Stack):
             "send_report",
             lambda_function=dk_lambda,
         )
-        definition = determine_severity.next(
-            block_bucket_boolean.when(
-                sfn.Condition.string_equals("$.block_bucket", "true"),
-                block_s3_bucket.next(send_report),
-            )
-        )
+        definition = block_s3_bucket
         dc_state_machine = sfn.StateMachine(
             self,
             "DataCopStepFunction",
