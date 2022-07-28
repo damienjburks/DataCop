@@ -3,12 +3,8 @@ Module for defining Lambda handler.
 """
 import json
 
-from data_cop.s3_service import S3Service
 from data_cop.session_config import BotoConfig
-from data_cop.parser_ import FileParser, MacieLogParser
-
-CONFIG_FILE_PATH = "./.config.json"
-
+from data_cop.ssm_service import SSMService
 
 def lambda_handler(event, _context):
     """
@@ -19,9 +15,10 @@ def lambda_handler(event, _context):
     :return:
     """
     boto_session = BotoConfig().get_session()
-    config = load_config_file()
-
-    if event["Records"][0]["eventName"] == "ObjectCreated:Put":
+    ssm_svc = SSMService(boto_session)
+    print(event)
+    print(ssm_svc.get_severity())
+    """if event["Records"][0]["eventName"] == "ObjectCreated:Put":        
         s3_obj_key = event["Records"][0]["s3"]["object"]["key"]
         s3_bucket_name = event["Records"][0]["s3"]["bucket"]["name"]
         if "jsonl.gz" in s3_obj_key:
@@ -48,15 +45,6 @@ def lambda_handler(event, _context):
                     bucket_name = vetted_findings["bucket_name"]
                     s3_service.block_public_access(bucket_name)
                     s3_service.restrict_access_to_bucket(bucket_name)
-                    break
+                    break"""
 
     return event
-
-
-def load_config_file():
-    """Loads the config file"""
-    with open(CONFIG_FILE_PATH, "rb") as f:
-        config_file = f.read().decode()
-        conf_json = json.load(config_file)
-
-    return conf_json
