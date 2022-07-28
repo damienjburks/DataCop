@@ -15,12 +15,27 @@ def lambda_handler(event, _context):
     :param _context:
     :return:
     """
+
     boto_session = BotoConfig().get_session()
+
+    if event["state_name"] == "determine_severity":
+        state_response = state_determine_severity(event, boto_session)
+    if event["state_name"] == "block_s3_bucket":
+        state_response = state_block_s3_bucket(event, boto_session)
+    if event["state_name"] == "send_report":
+        state_response = state_block_s3_bucket(event, boto_session)
+    if event["state_name"] == "send_error_report":
+        state_response = state_block_s3_bucket(event, boto_session)
+
+    return state_response
+
+
+def state_determine_severity(event, boto_session):
     ssm_svc = SSMService(boto_session)
     severity = ssm_svc.get_severity()
+    s3_obj_key = event["Payload"]["detail"]["requestParameters"]["key"]
+    s3_bucket_name = event["Payload"]["detail"]["requestParameters"]["bucketName"]
 
-    s3_obj_key = event["detail"]["requestParameters"]["key"]
-    s3_bucket_name = event["detail"]["requestParameters"]["bucketName"]
     if "jsonl.gz" in s3_obj_key:
         file_name = s3_obj_key.split("/")[-1]
 
@@ -35,16 +50,36 @@ def lambda_handler(event, _context):
 
         # Parsing JSON
         string_parser = MacieLogParser()
+
         for data in data_list:
             findings_dict = string_parser.transform_json(data)
             vetted_findings = string_parser.parse_findings(findings_dict)
-
             # Start denying services
             if vetted_findings["severity"].lower() == severity:
-                # Start the block public access to the bucket
-                bucket_name = vetted_findings["bucket_name"]
-                s3_service.block_public_access(bucket_name)
-                s3_service.restrict_access_to_bucket(bucket_name)
                 break
 
-    return event
+        return vetted_findings
+
+
+def state_block_s3_bucket(event, boto_session):
+    # Start the block public access to the bucket
+    s3_service = S3Service(boto_session)
+    bucket_name = event["report"]["bucket_name"]
+    s3_service.block_public_access(bucket_name)
+    s3_service.restrict_access_to_bucket(bucket_name)
+
+    return {"bucket_name": bucket_name, "is_blocked": True}
+
+
+def state_send_report(event, boto_session):
+    """
+    WIP: Another feature
+    """
+    return None
+
+
+def state_send_error_report(event, boto_session):
+    """
+    WIP: Another feature
+    """
+    return None

@@ -110,6 +110,17 @@ class DataCopCoreStack(Stack):
             )
         )
 
+        # Create S3 Bucket w/ S3 Managed Encryption
+        s3_bucket = s3.Bucket(
+            self,
+            "DataCopS3Bucket",
+            bucket_name=BUCKET_NAME,
+            auto_delete_objects=True,
+            removal_policy=RemovalPolicy.DESTROY,
+            encryption=s3.BucketEncryption.S3_MANAGED,
+        )
+        s3_bucket.policy.document.creation_stack.clear()  # Clearing bucket policy
+
         dk_lambda.role.add_managed_policy(
             iam.ManagedPolicy(
                 self,
@@ -119,11 +130,7 @@ class DataCopCoreStack(Stack):
                         iam.PolicyStatement(
                             sid="AllowPutActions",
                             effect=Effect.ALLOW,
-                            actions=[
-                                "s3:PutBucketPolicy",
-                                "s3:PutBucketAcl",
-                                "s3:PutBucketPublicAccessBlock",
-                            ],
+                            actions=["s3:Put*"],
                             resources=["arn:aws:s3:::*"],
                         ),
                         iam.PolicyStatement(
@@ -146,17 +153,6 @@ class DataCopCoreStack(Stack):
                 ),
             )
         )
-
-        # Create S3 Bucket w/ S3 Managed Encryption
-        s3_bucket = s3.Bucket(
-            self,
-            "DataCopS3Bucket",
-            bucket_name=BUCKET_NAME,
-            auto_delete_objects=True,
-            removal_policy=RemovalPolicy.DESTROY,
-            encryption=s3.BucketEncryption.S3_MANAGED,
-        )
-        s3_bucket.policy.document.creation_stack.clear()  # Clearing bucket policy
 
         # Creating bucket policy & attaching it to s3 bucket
         default_bucket_policy = iam.PolicyStatement(
@@ -194,16 +190,53 @@ class DataCopCoreStack(Stack):
             self, "send_error_report", lambda_function=dk_lambda
         )
 
+        determine_severity = sfn_tasks.LambdaInvoke(
+            self,
+            "determine_severity",
+            lambda_function=dk_lambda,
+            payload=sfn.TaskInput.from_object(
+                {
+                    "state_name": "determine_severity",
+                    "Payload.$": "$",
+                }
+            ),
+            result_path="$.determine_severity",
+            output_path="$.determine_severity",
+        ).add_catch(handler=send_error_report, result_path="$.exception")
+
+        block_bucket_boolean = sfn.Choice(self, "Block Bucket?")
+
         block_s3_bucket = sfn_tasks.LambdaInvoke(
-            self, "block_s3_bucket", lambda_function=dk_lambda
+            self,
+            "block_s3_bucket",
+            lambda_function=dk_lambda,
+            payload=sfn.TaskInput.from_object(
+                {
+                    "state_name": "block_s3_bucket",
+                    "report.$": "$.Payload",
+                }
+            ),
+            result_path="$.block_s3_bucket",
+            output_path="$.block_s3_bucket",
         ).add_catch(handler=send_error_report, result_path="$.exception")
 
         send_report = sfn_tasks.LambdaInvoke(
             self,
             "send_report",
             lambda_function=dk_lambda,
+            payload=sfn.TaskInput.from_object(
+                {
+                    "state_name": "send_report",
+                    "report.$": "$.Payload",
+                }
+            ),
         )
-        definition = block_s3_bucket
+        definition = determine_severity.next(
+            block_bucket_boolean.when(
+                sfn.Condition.is_not_null("$.Payload"),
+                block_s3_bucket.next(send_report),
+            ).otherwise(sfn.Pass(self, "Ignore Bucket"))
+        )
         dc_state_machine = sfn.StateMachine(
             self,
             "DataCopStepFunction",
