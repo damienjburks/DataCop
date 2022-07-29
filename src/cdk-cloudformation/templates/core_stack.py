@@ -27,6 +27,7 @@ from .constructs.lambda_packager import LambdaPackager
 
 
 class DataCopCoreStack(Stack):
+    # pylint: disable=too-many-locals
     """
     This class contains the logic for deploying the following resources:
     - S3 Buckets

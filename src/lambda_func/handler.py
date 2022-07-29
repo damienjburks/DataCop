@@ -22,15 +22,15 @@ def lambda_handler(event, _context):
         state_response = state_determine_severity(event, boto_session)
     if event["state_name"] == "block_s3_bucket":
         state_response = state_block_s3_bucket(event, boto_session)
-    if event["state_name"] == "send_report":
-        state_response = state_block_s3_bucket(event, boto_session)
-    if event["state_name"] == "send_error_report":
-        state_response = state_block_s3_bucket(event, boto_session)
 
     return state_response
 
 
 def state_determine_severity(event, boto_session):
+    """
+    Contains logic for the determine_severity state in the
+    step function
+    """
     ssm_svc = SSMService(boto_session)
     severity = ssm_svc.get_severity()
     s3_obj_key = event["Payload"]["detail"]["requestParameters"]["key"]
@@ -58,10 +58,14 @@ def state_determine_severity(event, boto_session):
             if vetted_findings["severity"].lower() == severity:
                 break
 
-        return vetted_findings
+    return vetted_findings
 
 
 def state_block_s3_bucket(event, boto_session):
+    """
+    Contains logic for the block_s3_bucket state in the
+    step function
+    """
     # Start the block public access to the bucket
     s3_service = S3Service(boto_session)
     bucket_name = event["report"]["bucket_name"]
@@ -69,17 +73,3 @@ def state_block_s3_bucket(event, boto_session):
     s3_service.restrict_access_to_bucket(bucket_name)
 
     return {"bucket_name": bucket_name, "is_blocked": True}
-
-
-def state_send_report(event, boto_session):
-    """
-    WIP: Another feature
-    """
-    return None
-
-
-def state_send_error_report(event, boto_session):
-    """
-    WIP: Another feature
-    """
-    return None
