@@ -29,6 +29,8 @@ def lambda_handler(event, _context):
         state_response = state_send_report(event, boto_session)
     if event["state_name"] == "send_error_report":
         state_response = state_send_error_report(event, boto_session)
+    if event["state_name"] == "check_bucket_status":
+        state_response = state_check_bucket_status(event, boto_session)
 
     return state_response
 
@@ -67,6 +69,17 @@ def state_determine_severity(event, boto_session):
                 break
 
     return vetted_findings
+
+
+def state_check_bucket_status(event, boto_session):
+    s3_service = S3Service(boto_session)
+    bucket_name = event["report"]["bucket_name"]
+    is_denied = s3_service.compare_bucket_policy(bucket_name)
+    is_not_public = s3_service.block_public_access(bucket_name)
+
+    if is_denied and is_not_public:
+        return {"is_blocked": "true"}
+    return {"is_blocked": "false"}
 
 
 def state_block_s3_bucket(event, boto_session):

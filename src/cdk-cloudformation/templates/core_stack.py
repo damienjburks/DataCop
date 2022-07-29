@@ -129,9 +129,9 @@ class DataCopCoreStack(Stack):
                 document=iam.PolicyDocument(
                     statements=[
                         iam.PolicyStatement(
-                            sid="AllowPutActions",
+                            sid="AllowPutAndGetActions",
                             effect=Effect.ALLOW,
-                            actions=["s3:Put*"],
+                            actions=["s3:Put*", "s3:Get*", "s3:List*"],
                             resources=["arn:aws:s3:::*"],
                         ),
                         iam.PolicyStatement(
@@ -222,6 +222,22 @@ class DataCopCoreStack(Stack):
 
         block_bucket_boolean = sfn.Choice(self, "Block Bucket?")
 
+        check_bucket_status = sfn_tasks.LambdaInvoke(
+            self,
+            "check_bucket_status",
+            lambda_function=dk_lambda,
+            payload=sfn.TaskInput.from_object(
+                {
+                    "state_name": "check_bucket_status",
+                    "report.$": "$.Payload",
+                }
+            ),
+            result_path="$.check_bucket_status",
+            output_path="$.check_bucket_status",
+        )
+
+        previously_blocked = sfn.Choice(self, "Previously Blocked?")
+
         block_s3_bucket = sfn_tasks.LambdaInvoke(
             self,
             "block_s3_bucket",
@@ -248,11 +264,17 @@ class DataCopCoreStack(Stack):
                 }
             ),
         )
+        ignore_bucket_state = sfn.Pass(self, "Ignore Bucket")
         definition = determine_severity.next(
             block_bucket_boolean.when(
                 sfn.Condition.is_not_null("$.Payload"),
-                block_s3_bucket.next(send_report),
-            ).otherwise(sfn.Pass(self, "Ignore Bucket"))
+                check_bucket_status.next(
+                    previously_blocked.when(
+                        sfn.Condition.string_equals("$.Payload.is_blocked", "false"),
+                        ignore_bucket_state,
+                    ).otherwise(block_s3_bucket.next(send_report))
+                ),
+            ).otherwise(ignore_bucket_state)
         )
         dc_state_machine = sfn.StateMachine(
             self,
