@@ -21,6 +21,10 @@ class SnsService:
         self.topic_arn = self.get_topic_arn()
 
     def get_topic_arn(self):
+        """
+        This function iterates through a list of topics
+        to find the DataCop topic.
+        """
         topic_arn = None
         response = self.sns_client.list_topics()
 

@@ -44,7 +44,7 @@ class MacieSetup:
             configuration={
                 "s3Destination": {
                     "bucketName": s3_bucket_name,
-                    "keyPrefix": "/",
+                    "keyPrefix": "macie-files",
                     "kmsKeyArn": key_arn,
                 }
             }

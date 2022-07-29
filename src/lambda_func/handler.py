@@ -90,7 +90,7 @@ def state_send_report(event, boto_session):
     sns_service = SnsService(boto_session)
     bucket_name = event["report"]["bucket_name"]
     execution_id = event["execution_id"].split(":")[-1]
-    subject = f"SUCCESS: DataCop S3 Blocking"
+    subject = "SUCCESS: DataCop S3 Blocking"
     message = (
         f"The following bucket(s) have been blocked: \n{bucket_name}!\n"
         f"Please revert to the step function logs associated with this execution id: {execution_id}"
@@ -107,7 +107,7 @@ def state_send_error_report(event, boto_session):
     cause = event["report"]["Cause"]
     error_message = json.loads(cause)["errorMessage"]
     execution_id = event["execution_id"].split(":")[-1]
-    subject = f"FAILURE: DataCop S3 Blocking"
+    subject = "FAILURE: DataCop S3 Blocking"
     message = (
         f"We've experienced an error. Please revert to the step function "
         f"logs associated with this execution id: {execution_id}"
