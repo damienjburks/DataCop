@@ -1,9 +1,12 @@
 """
 Module for defining Lambda handler.
 """
+import json
+
 from data_cop.session_config import BotoConfig
 from data_cop.ssm_service import SSMService
 from data_cop.s3_service import S3Service
+from data_cop.sns_service import SnsService
 from data_cop.parser_ import FileParser, MacieLogParser
 
 
@@ -12,7 +15,7 @@ def lambda_handler(event, _context):
     Handler that contains core logic for blocking S3 buckets
     and parsing Macie results
     :param event:
-    :param _context:
+    :param context:
     :return:
     """
 
@@ -22,6 +25,10 @@ def lambda_handler(event, _context):
         state_response = state_determine_severity(event, boto_session)
     if event["state_name"] == "block_s3_bucket":
         state_response = state_block_s3_bucket(event, boto_session)
+    if event["state_name"] == "send_report":
+        state_response = state_send_report(event, boto_session)
+    if event["state_name"] == "send_error_report":
+        state_response = state_send_error_report(event, boto_session)
 
     return state_response
 
@@ -35,6 +42,7 @@ def state_determine_severity(event, boto_session):
     severity = ssm_svc.get_severity()
     s3_obj_key = event["Payload"]["detail"]["requestParameters"]["key"]
     s3_bucket_name = event["Payload"]["detail"]["requestParameters"]["bucketName"]
+    vetted_findings = None
 
     if "jsonl.gz" in s3_obj_key:
         file_name = s3_obj_key.split("/")[-1]
@@ -63,8 +71,8 @@ def state_determine_severity(event, boto_session):
 
 def state_block_s3_bucket(event, boto_session):
     """
-    Contains logic for the block_s3_bucket state in the
-    step function
+    Blocks the S3 bucket by restricting all access
+    to the bucket
     """
     # Start the block public access to the bucket
     s3_service = S3Service(boto_session)
@@ -73,3 +81,37 @@ def state_block_s3_bucket(event, boto_session):
     s3_service.restrict_access_to_bucket(bucket_name)
 
     return {"bucket_name": bucket_name, "is_blocked": True}
+
+
+def state_send_report(event, boto_session):
+    """
+    Publishes a report to the SNS topic
+    """
+    sns_service = SnsService(boto_session)
+    bucket_name = event["report"]["bucket_name"]
+    execution_id = event["execution_id"].split(":")[-1]
+    subject = "SUCCESS: DataCop S3 Blocking"
+    message = (
+        f"The following bucket(s) have been blocked: \n{bucket_name}!\n"
+        f"Please revert to the step function logs associated with this execution id: {execution_id}"
+    )
+    message_id = sns_service.send_email(subject, message)
+    return message_id
+
+
+def state_send_error_report(event, boto_session):
+    """
+    Publishes the error report to the SNS topic
+    """
+    sns_service = SnsService(boto_session)
+    cause = event["report"]["Cause"]
+    error_message = json.loads(cause)["errorMessage"]
+    execution_id = event["execution_id"].split(":")[-1]
+    subject = "FAILURE: DataCop S3 Blocking"
+    message = (
+        f"We've experienced an error. Please revert to the step function "
+        f"logs associated with this execution id: {execution_id}"
+        f" \nThe exception output is highlighted below: \n{error_message} "
+    )
+    message_id = sns_service.send_email(subject, message)
+    return message_id

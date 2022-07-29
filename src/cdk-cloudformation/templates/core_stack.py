@@ -71,7 +71,7 @@ class DataCopCoreStack(Stack):
         )
 
         # SNS Topic Creation
-        datacop_topic = sns.Topic(self, "DataCopTopic")
+        datacop_topic = sns.Topic(self, "DataCopTopic", display_name="AWS DataCop")
         datacop_topic.add_subscription(EmailSubscription(SUB_EMAIL_ADDRESS))
 
         # Package & create Lambda Function
@@ -150,6 +150,12 @@ class DataCopCoreStack(Stack):
                             actions=["kms:Decrypt"],
                             resources=[kms_key.key_arn],
                         ),
+                        iam.PolicyStatement(
+                            sid="AllowSnsPolicy",
+                            effect=Effect.ALLOW,
+                            actions=["sns:Publish", "sns:ListTopics"],
+                            resources=["*"],
+                        ),
                     ]
                 ),
             )
@@ -188,7 +194,16 @@ class DataCopCoreStack(Stack):
             retention=RetentionDays.INFINITE,
         )
         send_error_report = sfn_tasks.LambdaInvoke(
-            self, "send_error_report", lambda_function=dk_lambda
+            self,
+            "send_error_report",
+            lambda_function=dk_lambda,
+            payload=sfn.TaskInput.from_object(
+                {
+                    "state_name": "send_error_report",
+                    "report.$": "$.exception",
+                    "execution_id.$": "$$.Execution.Id",
+                }
+            ),
         )
 
         determine_severity = sfn_tasks.LambdaInvoke(
@@ -229,6 +244,7 @@ class DataCopCoreStack(Stack):
                 {
                     "state_name": "send_report",
                     "report.$": "$.Payload",
+                    "execution_id.$": "$$.Execution.Id",
                 }
             ),
         )
