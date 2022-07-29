@@ -129,7 +129,6 @@ def predeploy():
     """
     macie = MacieSetup()
     macie.enable_macie()
-    macie.create_config_json()
 
 
 def postdeploy():
