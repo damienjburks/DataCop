@@ -71,7 +71,7 @@ class DataCopCoreStack(Stack):
         )
 
         # SNS Topic Creation
-        datacop_topic = sns.Topic(self, "DataCopTopic", display_name="DataCopTopic")
+        datacop_topic = sns.Topic(self, "DataCopTopic", display_name="AWS DataCop")
         datacop_topic.add_subscription(EmailSubscription(SUB_EMAIL_ADDRESS))
 
         # Package & create Lambda Function
@@ -244,6 +244,7 @@ class DataCopCoreStack(Stack):
                 {
                     "state_name": "send_report",
                     "report.$": "$.Payload",
+                    "execution_id.$": "$$.Execution.Id",
                 }
             ),
         )
