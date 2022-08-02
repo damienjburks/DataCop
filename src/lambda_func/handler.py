@@ -72,6 +72,10 @@ def state_determine_severity(event, boto_session):
 
 
 def state_check_bucket_status(event, boto_session):
+    """
+    Checks the status of the S3 bucket. If it has been blocked,
+    it will return true, otherwise, false.
+    """
     s3_service = S3Service(boto_session)
     bucket_name = event["report"]["bucket_name"]
     is_denied = s3_service.compare_bucket_policy(bucket_name)

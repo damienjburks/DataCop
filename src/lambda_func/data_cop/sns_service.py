@@ -38,7 +38,7 @@ class SnsService:
 
     def send_email(self, subject, message):
         """
-        This function will publish a message to the topic
+        This function will publish a message to the topic.
         """
         message_id = self.sns_client.publish(
             TopicArn=self.topic_arn,

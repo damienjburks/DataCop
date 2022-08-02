@@ -52,15 +52,11 @@ class S3Service:
             deny_all_policy_json = json.dumps(DENY_ALL_POLICY).replace(
                 "bucket_name", s3_bucket_name
             )
-            if bucket_policy == deny_all_policy_json:
-                return True
-            else:
-                return False
+            return bool(bucket_policy == deny_all_policy_json)
         except ClientError as err:
             if "NoSuchBucketPolicy" in str(err):
                 return False
-            else:
-                return True
+            return True
 
     def is_public_access_blocked(self, s3_bucket_name):
         """
@@ -73,8 +69,7 @@ class S3Service:
 
         if "false" in str(pub_access_block).lower():
             return False
-        else:
-            return True
+        return True
 
     def download_file(self, s3_key, s3_bucket_name, file_name):
         """
