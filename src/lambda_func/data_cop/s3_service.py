@@ -19,8 +19,8 @@ DENY_ALL_POLICY = {
             "Condition": {
                 "StringNotLike": {
                     "aws:PrincipalARN": [
-                        "arn:aws:iam::*:user/DataKnight",
-                        "arn:aws:iam::*:role/DataKnight",
+                        "arn:aws:iam::*:user/DataCop",
+                        "arn:aws:iam::*:role/DataCop*",
                         "arn:aws:iam::*:root",
                     ]
                 }
@@ -39,6 +39,37 @@ class S3Service:
         self.s3_client = boto_session.client("s3")
         self.s3_resource = boto_session.resource("s3")
         self.logger = LoggerConfig().configure(type(self).__name__)
+
+    def compare_bucket_policy(self, s3_bucket_name):
+        """
+        This function compares the existing bucket policy against the
+        default DENYALL policy
+        """
+        try:
+            bucket_policy = self.s3_client.get_bucket_policy(Bucket=s3_bucket_name)[
+                "Policy"
+            ]
+            deny_all_policy_json = json.dumps(DENY_ALL_POLICY).replace(
+                "bucket_name", s3_bucket_name
+            )
+            return bool(bucket_policy == deny_all_policy_json)
+        except ClientError as err:
+            if "NoSuchBucketPolicy" in str(err):
+                return False
+            return True
+
+    def is_public_access_blocked(self, s3_bucket_name):
+        """
+        Checks to see if public access has been blocked
+        for an S3 bucket.
+        """
+        pub_access_block = self.s3_client.get_public_access_block(
+            Bucket=s3_bucket_name,
+        )["PublicAccessBlockConfiguration"]
+
+        if "false" in str(pub_access_block).lower():
+            return False
+        return True
 
     def download_file(self, s3_key, s3_bucket_name, file_name):
         """
