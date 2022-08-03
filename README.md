@@ -16,6 +16,11 @@ cap between Macie and S3 with AWS CDK
 * Configurable settings for bucket blocking (containment)
 * Event-driven S3 bucket blocking (containment)
 
+Architecture
+---
+If you would like to view the architecture of the project, please refer
+to the [Architecture Documentation](/documentation/architecture.md).
+
 Setup & Installation
 ---
 
