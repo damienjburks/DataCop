@@ -13,8 +13,13 @@ Features
 
 * Automatically provisioned infrastructure to bridge the 
 cap between Macie and S3 with AWS CDK
-* Configurable settings for bucket blocking (containment)
-* Event-driven S3 bucket blocking (containment)
+* Configurable settings for bucket blocking 
+* Event-driven S3 bucket blocking
+
+Architecture
+---
+If you would like to view the architecture of the project, please refer
+to the [Architecture Documentation](/documentation/architecture.md).
 
 Setup & Installation
 ---
@@ -83,12 +88,15 @@ run the following command to deploy the CDK stack:
     
 #### Figure 4. Deploying DataCop
 ```text
-(.env) $ invoke deploy
+(.env) $ invoke deploy your_email_address
 ```
+During the deployment phase, the email address will be subscribed to the SNS Topic. This 
+parameter is **required**, so make sure the email address is valid!
 
 >**NOTE:** This command will bootstrap the default AWS account & profile.
-Afterward, it will deploy everything with `cdk deploy`.
+Afterward, it will deploy everything with `cdk deploy`. 
 
+---
 To review the results, please log into your AWS account and verify
 that the following CloudFormation Template exists: `DataCopCoreStack`.
 
