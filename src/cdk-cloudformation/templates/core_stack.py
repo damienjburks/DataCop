@@ -270,7 +270,7 @@ class DataCopCoreStack(Stack):
                 sfn.Condition.is_not_null("$.Payload"),
                 check_bucket_status.next(
                     previously_blocked.when(
-                        sfn.Condition.string_equals("$.Payload.is_blocked", "false"),
+                        sfn.Condition.string_equals("$.Payload.is_blocked", "true"),
                         ignore_bucket_state,
                     ).otherwise(block_s3_bucket.next(send_report))
                 ),

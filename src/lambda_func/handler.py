@@ -79,11 +79,10 @@ def state_check_bucket_status(event, boto_session):
     s3_service = S3Service(boto_session)
     bucket_name = event["report"]["bucket_name"]
     is_denied = s3_service.compare_bucket_policy(bucket_name)
-    is_not_public = s3_service.block_public_access(bucket_name)
+    is_not_public = s3_service.is_public_access_blocked(bucket_name)
 
-    if is_denied and is_not_public:
-        return {"is_blocked": "true"}
-    return {"is_blocked": "false"}
+    is_blocked = is_denied and is_not_public
+    return {"is_blocked": str(is_blocked), "bucket_name": bucket_name}
 
 
 def state_block_s3_bucket(event, boto_session):
