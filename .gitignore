@@ -6,6 +6,7 @@ __pycache__
 .venv
 *.egg-info
 *.zip
+.DS_Store
 
 # CDK asset staging directory
 .cdk.staging
