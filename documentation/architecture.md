@@ -1,6 +1,6 @@
 # Architecture: DataCop
 
-<p align="center"><img src="./images/architecture_diagram.drawio.png" alt="DataCop Architecture Diagram"/></p>
+<p align="center"><img src="./images/architecture_diagram_revamp.drawio.png" alt="DataCop Architecture Diagram"/></p>
 
 ---
 
@@ -18,7 +18,7 @@ The security engineer, Ricky, decides to execute a Macie scan against the bucket
 has the DataCop framework backing it. If there are some data risks (user-specified), here are the actions
 that will take place in the order specified in the diagram:
 
-1. Ricky executes the Macie's Job against the vulnerable S3 bucket.
+1. Ricky executes the Macie's Job against the S3 buckets.
 2. The macie's results are sent to the Macie's Result Log S3 bucket. 
 3. The results that are published to the bucket are detected by the EventBridge rule for DataCop.
 4. Based on the file(s) that are uploaded to the result's bucket, the DataCop step function

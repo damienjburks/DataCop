@@ -105,3 +105,7 @@ Want to contribute?
 
 If you want to contribute, please take a 
 look at the [Contributing Documentation](./documentation/contributing.md).
+
+Presentations
+---
+- Automated S3 Blocking with AWS Macie and DataCop @ DevOpsDays Dallas - 5th Anniversary 2022: [Abstract](https://devopsdays.org/events/2022-dallas/program/damien-burks/)
