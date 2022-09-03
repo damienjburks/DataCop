@@ -47,6 +47,12 @@ class DataCopCoreStack(Stack):
             type="String",
             description="The name of the Amazon S3 bucket where uploaded files will be stored.",
         ).value_as_string
+        FORENSICS_BUCKET_NMAE = CfnParameter(
+            self,
+            "forensicsBucketName",
+            type="String",
+            description="The name of the Amazon S3 bucket where copies of risky files will be stored.",
+        )
         KMS_KEY_ALIAS = CfnParameter(
             self,
             "kmsKeyAlias",
@@ -112,15 +118,24 @@ class DataCopCoreStack(Stack):
         )
 
         # Create S3 Bucket w/ S3 Managed Encryption
-        s3_bucket = s3.Bucket(
+        result_s3_bucket = s3.Bucket(
             self,
-            "DataCopS3Bucket",
+            "DataCopMacieResultS3Bucket",
             bucket_name=BUCKET_NAME,
             auto_delete_objects=True,
             removal_policy=RemovalPolicy.DESTROY,
             encryption=s3.BucketEncryption.S3_MANAGED,
         )
-        s3_bucket.policy.document.creation_stack.clear()  # Clearing bucket policy
+        forensics_s3_bucket = s3.Bucket(
+            self,
+            "DataCopForensicsS3Bucket",
+            bucket_name=FORENSICS_BUCKET_NMAE,
+            auto_delete_objects=True,
+            removal_policy=RemovalPolicy.DESTROY,
+            encryption=s3.BucketEncryption.S3_MANAGED,
+        )
+        result_s3_bucket.policy.document.creation_stack.clear()
+        forensics_s3_bucket.policy.document.creation_stack.clear() 
 
         dk_lambda.role.add_managed_policy(
             iam.ManagedPolicy(
