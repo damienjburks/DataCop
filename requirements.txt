@@ -3,7 +3,7 @@ attrs==21.4.0
 aws-cdk-lib==2.27.0
 black==22.6.0
 boto3==1.24.7
-botocore==1.27.7
+botocore==1.27.69
 cattrs==22.1.0
 certifi==2022.6.15
 cffi==1.15.1
@@ -13,7 +13,7 @@ constructs==10.1.36
 cryptography==37.0.4
 dill==0.3.5.1
 docopt==0.6.2
-exceptiongroup==1.0.0rc8
+exceptiongroup==1.0.0rc9
 idna==3.3
 iniconfig==1.1.1
 invoke==1.7.1
