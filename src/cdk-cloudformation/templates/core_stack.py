@@ -52,7 +52,7 @@ class DataCopCoreStack(Stack):
             "forensicsBucketName",
             type="String",
             description="The name of the Amazon S3 bucket where copies of risky files will be stored.",
-        )
+        ).value_as_string
         KMS_KEY_ALIAS = CfnParameter(
             self,
             "kmsKeyAlias",
@@ -181,9 +181,9 @@ class DataCopCoreStack(Stack):
             effect=iam.Effect.ALLOW,
             actions=["s3:*"],
             principals=[iam.AnyPrincipal()],  # Clean this up in the future
-            resources=[s3_bucket.bucket_arn, f"{s3_bucket.bucket_arn}/*"],
+            resources=[result_s3_bucket.bucket_arn, f"{result_s3_bucket.bucket_arn}/*"],
         )
-        s3_bucket.add_to_resource_policy(default_bucket_policy)
+        result_s3_bucket.add_to_resource_policy(default_bucket_policy)
 
         # Creating CloudTrail w/ event selector
         # These CT events will trigger upon write commits only
@@ -193,7 +193,7 @@ class DataCopCoreStack(Stack):
             include_global_service_events=False,
             is_multi_region_trail=False,
         )
-        s3_event_selector = cloudtrail.S3EventSelector(bucket=s3_bucket)
+        s3_event_selector = cloudtrail.S3EventSelector(bucket=result_s3_bucket)
         dc_trail.add_s3_event_selector(
             [s3_event_selector],
             include_management_events=False,
@@ -310,7 +310,7 @@ class DataCopCoreStack(Stack):
             detail={
                 "eventSource": ["s3.amazonaws.com"],
                 "eventName": ["PutObject"],
-                "requestParameters": {"bucketName": [s3_bucket.bucket_name]},
+                "requestParameters": {"bucketName": [result_s3_bucket.bucket_name]},
             },
         )
         sfn_target = event_targets.SfnStateMachine(dc_state_machine)

@@ -42,10 +42,13 @@ def pre_setup(c):
     :return:
     """
     account_id = boto3.client("sts").get_caller_identity().get("Account")
-    s3_bucket_name = f"datacop-findings-{account_id}"
+    result_s3_bucket_name = f"datacop-findings-{account_id}"
+    forensics_s3_bucket_name = f"datacop-forensics-{account_id}"
+
     kms_key_alias = "alias/data-cop-kms-key"
 
-    os.environ["S3_BUCKET_NAME"] = s3_bucket_name
+    os.environ["RESULT_S3_BUCKET_NAME"] = result_s3_bucket_name
+    os.environ["FORENSICS_S3_BUCKET_NAME"] = forensics_s3_bucket_name
     os.environ["KMS_KEY_ALIAS"] = kms_key_alias
 
 
@@ -80,7 +83,8 @@ def deploy(c, email_address):
         f"cd src/cdk-cloudformation && "
         f"cdk bootstrap && "
         f"cdk deploy --require-approval=never "
-        f"--parameters bucketName={os.environ['S3_BUCKET_NAME']} "
+        f"--parameters bucketName={os.environ['RESULT_S3_BUCKET_NAME']} "
+        f"--parameters forensicsBucketName={os.environ['FORENSICS_S3_BUCKET_NAME']} "
         f"--parameters kmsKeyAlias={os.environ['KMS_KEY_ALIAS']} "
         f"--parameters snsEmailAddress={email_address}"
     )

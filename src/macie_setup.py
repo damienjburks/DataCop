@@ -28,7 +28,7 @@ class MacieSetup:
         Configures the classification report S3 bucket for Macie
         :return:
         """
-        s3_bucket_name = os.environ["S3_BUCKET_NAME"]
+        s3_bucket_name = os.environ["RESULT_S3_BUCKET_NAME"]
         kms_key_alias = os.environ["KMS_KEY_ALIAS"]
         self.logger.info("Configuring classification report: %s", s3_bucket_name)
 
@@ -109,7 +109,7 @@ class MacieSetup:
         :return:
         """
         self.s3_client.put_public_access_block(
-            Bucket=os.environ["S3_BUCKET_NAME"],
+            Bucket=os.environ["RESULT_S3_BUCKET_NAME"],
             PublicAccessBlockConfiguration={
                 "BlockPublicAcls": True,
                 "IgnorePublicAcls": True,
@@ -118,7 +118,7 @@ class MacieSetup:
             },
         )
         self.logger.info(
-            "Blocked public access to bucket: %s", os.environ["S3_BUCKET_NAME"]
+            "Blocked public access to bucket: %s", os.environ["RESULT_S3_BUCKET_NAME"]
         )
 
 
