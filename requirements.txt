@@ -1,4 +1,4 @@
-astroid==2.11.6
+astroid==2.12.9
 attrs==21.4.0
 aws-cdk-lib==2.41.0
 black==22.6.0
