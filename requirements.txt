@@ -1,6 +1,6 @@
 astroid==2.11.6
 attrs==21.4.0
-aws-cdk-lib==2.27.0
+aws-cdk-lib==2.41.0
 black==22.6.0
 boto3==1.24.7
 botocore==1.27.69
@@ -33,7 +33,7 @@ pluggy==1.0.0
 publication==0.0.3
 py==1.11.0
 pycparser==2.21
-Pygments==2.12.0
+Pygments==2.13.0
 pylint==2.14.3
 pyparsing==3.0.9
 pytest==7.1.2
