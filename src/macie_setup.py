@@ -122,6 +122,16 @@ class MacieSetup:
         )
 
 
+class FileStorageSetup:
+    """
+    Class that contains logic for
+    setting up File Storage.
+    """
+
+    def __init__(self):
+        pass
+
+
 def predeploy():
     """
     Function to execute pre-deployment steps
