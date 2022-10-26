@@ -1,6 +1,7 @@
 """
 Module for deploying CDK core resources for DataCop.
 """
+from os import environ
 from aws_cdk import RemovalPolicy, CfnParameter, CfnOutput
 from aws_cdk import (
     Stack,
@@ -179,5 +180,22 @@ class CoreStack(Stack):
         )
 
         # Create Outputs for this CFT
-        CfnOutput(self, "LambdaFunctionArn", value=dk_lambda.function_arn)
-        CfnOutput(self, "DataCopS3BucketArn", value=s3_bucket.bucket_arn)
+        CfnOutput(
+            self,
+            "DataCopLambdaFunctionArn",
+            value=dk_lambda.function_arn,
+            export_name="LambdaFunctionArn",
+        )
+        CfnOutput(
+            self,
+            "DataCopS3BucketArn",
+            value=s3_bucket.bucket_arn,
+            export_name="S3BucketArn",
+        )
+        if environ.get("FSS_SNS_TOPIC_ARN") is not None:
+            CfnOutput(
+                self,
+                "DataCopFssSnsTopicArn",
+                value=environ.get("FSS_SNS_TOPIC_ARN"),
+                export_name="FssSnsTopicArn",
+            )

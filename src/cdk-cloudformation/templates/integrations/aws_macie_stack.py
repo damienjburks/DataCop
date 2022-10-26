@@ -1,4 +1,3 @@
-import aws_cdk
 from aws_cdk import RemovalPolicy, Fn
 from aws_cdk import (
     Stack,
@@ -14,6 +13,8 @@ from aws_cdk import (
 )
 from aws_cdk.aws_logs import RetentionDays
 
+STEP_FUNCTION_NAME = "DCMacieStepFunction"
+
 
 class MacieStack(Stack):
     # pylint: disable=too-many-locals
@@ -28,7 +29,7 @@ class MacieStack(Stack):
         super().__init__(scope, id, **kwargs)
 
         # Import S3 Bucket
-        s3_bucket_arn = Fn.import_value("DataCopS3BucketArn")
+        s3_bucket_arn = Fn.import_value("S3BucketArn")
         s3_bucket = s3.Bucket.from_bucket_arn(
             self, id="DataCopS3Bucket", bucket_arn=s3_bucket_arn
         )
@@ -42,8 +43,8 @@ class MacieStack(Stack):
         # Create Step Function w/ states
         sfn_log_group = logs.LogGroup(
             self,
-            "DataCopSfnLogGroup",
-            log_group_name="DataCopSfnLogGroup",
+            "DataCopMacieSfnLogGroup",
+            log_group_name="DataCopMacieSfnLogGroup",
             removal_policy=RemovalPolicy.DESTROY,
             retention=RetentionDays.INFINITE,
         )
@@ -132,8 +133,8 @@ class MacieStack(Stack):
         )
         dc_state_machine = sfn.StateMachine(
             self,
-            "DCMacieStepFunction",
-            state_machine_name="DCMacieStepFunction",
+            STEP_FUNCTION_NAME,
+            state_machine_name=STEP_FUNCTION_NAME,
             definition=definition,
             logs=sfn.LogOptions(
                 destination=sfn_log_group,

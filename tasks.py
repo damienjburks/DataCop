@@ -52,6 +52,9 @@ def pre_setup(c):
     ] = f"{config['configuration']['s3_bucket_name']}-{account_id}"
     os.environ["KMS_KEY_ALIAS"] = config["configuration"]["kms_key_alias"]
     os.environ["EMAIL_ADDRESS"] = config["configuration"]["email_address"]
+    os.environ["FSS_SNS_TOPIC_ARN"] = config["configuration"][
+        "file_storage_sns_topic_arn"
+    ]
 
 
 @task
@@ -83,10 +86,10 @@ def deploy(c):
     c.run(
         f"cd src/cdk-cloudformation && "
         f"cdk bootstrap && "
-        f"cdk deploy --require-approval=never "
-        f"--parameters bucketName={os.environ['S3_BUCKET_NAME']} "
-        f"--parameters kmsKeyAlias={os.environ['KMS_KEY_ALIAS']} "
-        f"--parameters snsEmailAddress={os.environ['EMAIL_ADDRESS']}"
+        f"cdk deploy --all --require-approval=never "
+        f"--parameters DataCopCore:bucketName={os.environ['S3_BUCKET_NAME']} "
+        f"--parameters DataCopCore:kmsKeyAlias={os.environ['KMS_KEY_ALIAS']} "
+        f"--parameters DataCopCore:snsEmailAddress={os.environ['EMAIL_ADDRESS']}"
     )
 
 

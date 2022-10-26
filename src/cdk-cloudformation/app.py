@@ -12,10 +12,10 @@ app = cdk.App()
 
 core_stack = CoreStack(app, "DataCopCore")
 aws_macie_stack = MacieStack(app, "DataCopMacieStack")
-# fss_stack = FileStorageStack(app, "DCFileStorageStack")
+fss_stack = FileStorageStack(app, "DataCopFssStack")
 
 # Dependencies
-aws_macie_stack.add_dependency(core_stack)
-# fss_stack.add_dependency(core_stack)
+aws_macie_stack.node.add_dependency(core_stack)
+fss_stack.node.add_dependency(core_stack)
 
 app.synth()

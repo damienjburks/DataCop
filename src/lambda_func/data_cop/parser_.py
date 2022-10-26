@@ -6,6 +6,28 @@ import gzip
 import json
 
 from data_cop.logging_config import LoggerConfig
+from data_cop.enums_ import DataCopEnum
+
+
+class EventParser:
+    """
+    This class is responsible for parsing the event and
+    figuring out what state machine it should be sent to, if applicable.
+    """
+
+    def __init__(self):
+        self.logger = LoggerConfig().configure(type(self).__name__)
+
+    def determine_type(self):
+        """Function that determines the type of event"""
+        if (
+            "malware" in self.event
+            and "scanner_status" in self.event
+            and "scanner_status_message" in self.event
+        ):
+            return DataCopEnum.FSS
+        else:
+            return DataCopEnum.MACIE
 
 
 class FileParser:
