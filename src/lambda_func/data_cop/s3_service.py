@@ -139,3 +139,37 @@ class S3Service:
         self.logger.debug(response)
 
         return response
+
+    def copy_object_to_bucket(
+        self,
+        original_object_key,
+        target_object_key,
+        original_bucket_name,
+        target_bucket_name,
+    ):
+        """
+        Copies an S3 bucket from one bucket to the target bucket.
+        """
+        source_copy_json = {"Bucket": original_bucket_name, "Key": target_object_key}
+        self.s3_resource.meta.client.copy(
+            source_copy_json, target_bucket_name, original_object_key
+        )
+        self.logger.info("Object has been copied successfully!")
+
+        return {"targetBucketName": target_bucket_name, "fileName": target_object_key}
+
+    def delete_object_from_bucket(self, object_key, bucket_name):
+        """
+        Deletes the object from the s3 bucket
+        """
+        delete_response = self.s3_client.delete_object(
+            Bucket=bucket_name,
+            Key=object_key,
+        )
+
+        self.logger.info(
+            "Deleted the following object from the %s S3 bucket: %s",
+            object_key,
+            bucket_name,
+        )
+        return delete_response

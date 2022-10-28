@@ -7,6 +7,7 @@ from data_cop.session_config import BotoConfig
 from data_cop.ssm_service import SSMService
 from data_cop.s3_service import S3Service
 from data_cop.sns_service import SnsService
+from data_cop.sfn_service import SfnService
 from data_cop.parser_ import FileParser, MacieLogParser, EventParser
 from data_cop.enums_ import DataCopEnum
 
@@ -22,46 +23,48 @@ def lambda_handler(event, _context):
 
     boto_session = BotoConfig().get_session()
     state_response = None
-    _enum = DataCopEnum.MACIE
 
-    if "step_function_name" not in event:
-        _enum = EventParser().determine_type()
+    if "state_name" not in event:  # It's coming from SNS
+        _enum = EventParser(event).determine_type()
 
-    # DataCop Macie Step Function States
-    if _enum == DataCopEnum.MACIE:
-        if event["state_name"] == "determine_severity":
-            state_response = state_determine_severity(event, boto_session)
-        if event["state_name"] == "block_s3_bucket":
-            state_response = state_block_s3_bucket(event, boto_session)
-        if event["state_name"] == "send_report":
-            state_response = state_send_report(event, boto_session)
-        if event["state_name"] == "send_error_report":
-            state_response = state_send_error_report(event, boto_session)
-        if event["state_name"] == "check_bucket_status":
-            state_response = state_check_bucket_status(event, boto_session)
-    # DataCop FSS Step Function States
-    if _enum == DataCopEnum.FSS:
-        if event["state_name"] == "check_bucket_status":
-            state_response = state_check_bucket_status(event, boto_session)
-        if event["state_name"] == "block_s3_bucket":
-            state_response = state_block_s3_bucket(event, boto_session)
-        if event["state_name"] == "copy_object_to_quarantine_bucket":
-            state_response = state_copy_object_to_quarantine_bucket(event, boto_session)
-        if event["state_name"] == "remove_object_from_parent_bucket":
-            state_response = state_remove_object_from_parent_bucket(event, boto_session)
-        if event["state_name"] == "send_report":
-            state_response = state_send_report(event, boto_session)
-        if event["state_name"] == "send_error_report":
-            state_response = state_send_error_report(event, boto_session)
+        # DataCop FSS Step Function States
+        if _enum == DataCopEnum.FSS:
+            # Execute the step function
+            sfn_payload = EventParser(event).create_sfn_payload(_enum)
+            sfn_obj = SfnService(boto_session)
+            sfn_obj.execute_sfn(sfn_payload, _enum)
+
+    if event["state_name"] == "check_bucket_status":
+        state_response = state_check_bucket_status(event, boto_session)
+    if event["state_name"] == "block_s3_bucket":
+        state_response = state_block_s3_bucket(event, boto_session)
+    if event["state_name"] == "copy_object_to_quarantine_bucket":
+        state_response = state_copy_object_to_quarantine_bucket(event, boto_session)
+    if event["state_name"] == "remove_object_from_parent_bucket":
+        state_response = state_remove_object_from_parent_bucket(event, boto_session)
+    if event["state_name"] == "send_report":
+        state_response = state_send_report(event, boto_session)
+    if event["state_name"] == "send_error_report":
+        state_response = state_send_error_report(event, boto_session)
+    if event["state_name"] == "determine_severity":
+        state_response = state_determine_severity(event, boto_session)
 
     return state_response
 
 
 def state_copy_object_to_quarantine_bucket(event, boto_session):
+    """
+    Contains logic for copy_object_to_quarantine_bucket
+    in the step function
+    """
     pass
 
 
 def state_remove_object_from_parent_bucket(event, boto_session):
+    """
+    Contains logic for remove_object_from_parent_bucket
+    in the step function
+    """
     pass
 
 

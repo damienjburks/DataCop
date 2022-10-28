@@ -116,10 +116,11 @@ class CoreStack(Stack):
         )
         s3_bucket.policy.document.creation_stack.clear()  # Clearing bucket policy
 
+        # Lambda Function Permissions
         dk_lambda.role.add_managed_policy(
             iam.ManagedPolicy(
                 self,
-                "DataCopS3PolicyInline",
+                "DataCopLambdaPolicyInline",
                 document=iam.PolicyDocument(
                     statements=[
                         iam.PolicyStatement(
@@ -150,9 +151,23 @@ class CoreStack(Stack):
                             actions=["sns:Publish", "sns:ListTopics"],
                             resources=["*"],
                         ),
+                        iam.PolicyStatement(
+                            sid="AllowSfnInteractions",
+                            effect=Effect.ALLOW,
+                            actions=[
+                                "states:ListStateMachines",
+                                "states:StartExecution",
+                            ],
+                            resources=["*"],
+                        ),
                     ]
                 ),
             )
+        )
+        dk_lambda.add_permission(
+            "AllowInvokeViaSns",
+            principal=iam.ServicePrincipal("sns.amazonaws.com"),
+            action="lambda:InvokeFunction",
         )
 
         # Creating bucket policy & attaching it to s3 bucket

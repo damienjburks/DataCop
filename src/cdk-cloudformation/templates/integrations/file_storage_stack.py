@@ -68,7 +68,7 @@ class FileStorageStack(Stack):
             payload=sfn.TaskInput.from_object(
                 {
                     "state_name": "check_bucket_status",
-                    "report.$": "$.Payload",
+                    "report.$": "$",
                 }
             ),
             result_path="$.check_bucket_status",
@@ -132,17 +132,18 @@ class FileStorageStack(Stack):
             ),
         )
 
-        definition = check_bucket_status.next(
-            previously_blocked.when(
-                sfn.Condition.string_equals("$.Payload.is_blocked", "true"),
-                block_s3_bucket,
-            )
-            .afterwards(include_error_handlers=True)
-            .next(
-                copy_object_to_quarantine_bucket.next(
-                    remove_object_from_parent_bucket.next(send_report)
+        definition = (
+            check_bucket_status.next(
+                previously_blocked.when(
+                    sfn.Condition.string_equals("$.Payload.is_blocked", "true"),
+                    block_s3_bucket,
                 )
+                .otherwise(sfn.Pass(self, "Continue"))
+                .afterwards()
             )
+            .next(copy_object_to_quarantine_bucket)
+            .next(remove_object_from_parent_bucket)
+            .next(send_report)
         )
 
         sfn.StateMachine(
