@@ -57,7 +57,29 @@ def state_copy_object_to_quarantine_bucket(event, boto_session):
     Contains logic for copy_object_to_quarantine_bucket
     in the step function
     """
-    pass
+    s3_svc = S3Service(boto_session)
+    ssm_service = SSMService(boto_session)
+
+    # Parse the event and pull out the bucket name
+    # and get the target bucket name
+    original_bucket_name = event["report"]["bucket_name"]
+    original_object_key_path = event["report"]["object_path"]
+    target_object_key_path = f"{original_bucket_name}/{event['report']['object_key']}"
+    target_bucket_name = ssm_service.get_quarantine_bucket_name()
+
+    # Copy object from original bucket to quarantine
+    s3_svc.copy_object_to_bucket(
+        original_object_key_path,
+        target_object_key_path,
+        original_bucket_name,
+        target_bucket_name,
+    )
+
+    return {
+        "original_bucket_name": original_bucket_name,
+        "target_bucket_name": target_bucket_name,
+        "target_bucket_path": target_object_key_path,
+    }
 
 
 def state_remove_object_from_parent_bucket(event, boto_session):
@@ -65,7 +87,17 @@ def state_remove_object_from_parent_bucket(event, boto_session):
     Contains logic for remove_object_from_parent_bucket
     in the step function
     """
-    pass
+    s3_svc = S3Service(boto_session)
+
+    original_bucket_name = event["report"]["bucket_name"]
+    original_object_key_path = event["report"]["object_path"]
+
+    s3_svc.delete_object_from_bucket(original_object_key_path, original_bucket_name)
+
+    return {
+        "original_bucket_name": original_bucket_name,
+        "deleted_object_key": original_object_key_path,
+    }
 
 
 def state_determine_severity(event, boto_session):

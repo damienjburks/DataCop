@@ -55,6 +55,9 @@ def pre_setup(c):
     os.environ["FSS_SNS_TOPIC_ARN"] = config["configuration"][
         "file_storage_sns_topic_arn"
     ]
+    os.environ["QUARANTINE_S3_BUCKET_NAME"] = config["configuration"][
+        "quarantine_s3_bucket_name"
+    ]
 
 
 @task

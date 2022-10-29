@@ -108,13 +108,25 @@ class CoreStack(Stack):
         # Create S3 Bucket w/ S3 Managed Encryption
         s3_bucket = s3.Bucket(
             self,
-            "DataCopS3Bucket",
+            "DataCopBucket",
             bucket_name=BUCKET_NAME,
             auto_delete_objects=True,
             removal_policy=RemovalPolicy.DESTROY,
             encryption=s3.BucketEncryption.S3_MANAGED,
         )
         s3_bucket.policy.document.creation_stack.clear()  # Clearing bucket policy
+
+        if environ.get("QUARANTINE_S3_BUCKET_NAME") is not None:
+            # Create Quarantine S3 Bucket w/ S3 Managed Encryption
+            quarantine_s3_bucket = s3.Bucket(
+                self,
+                "DataCopQuarantineBucket",
+                bucket_name=environ.get("QUARANTINE_S3_BUCKET_NAME"),
+                auto_delete_objects=True,
+                removal_policy=RemovalPolicy.DESTROY,
+                encryption=s3.BucketEncryption.S3_MANAGED,
+            )
+            quarantine_s3_bucket.policy.document.creation_stack.clear()  # Clearing bucket policy
 
         # Lambda Function Permissions
         dk_lambda.role.add_managed_policy(
