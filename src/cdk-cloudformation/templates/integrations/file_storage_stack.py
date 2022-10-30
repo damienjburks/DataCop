@@ -20,6 +20,11 @@ STEP_FUNCTION_NAME = "DCFssStepFunction"
 
 
 class FileStorageStack(Stack):
+    """
+    This class will deploy necessary resources and a state machine for
+    dealing with File Storage Security with CloudOne.
+    """
+
     # pylint: disable=too-many-locals
 
     def __init__(self, scope: App, id: str, **kwargs) -> None:
@@ -61,6 +66,34 @@ class FileStorageStack(Stack):
             ),
         )
 
+        copy_object_to_quarantine_bucket = sfn_tasks.LambdaInvoke(
+            self,
+            "copy_object_to_quarantine_bucket",
+            lambda_function=dc_lambda,
+            payload=sfn.TaskInput.from_object(
+                {
+                    "state_name": "copy_object_to_quarantine_bucket",
+                    "report.$": "$",
+                }
+            ),
+            result_path="$.copy_object_to_quarantine_bucket",
+            output_path="$.copy_object_to_quarantine_bucket",
+        ).add_catch(handler=send_error_report, result_path="$.exception")
+
+        remove_object_from_parent_bucket = sfn_tasks.LambdaInvoke(
+            self,
+            "remove_object_from_parent_bucket",
+            lambda_function=dc_lambda,
+            payload=sfn.TaskInput.from_object(
+                {
+                    "state_name": "remove_object_from_parent_bucket",
+                    "report.$": "$.Payload",
+                }
+            ),
+            result_path="$.remove_object_from_parent_bucket",
+            output_path="$.remove_object_from_parent_bucket",
+        ).add_catch(handler=send_error_report, result_path="$.exception")
+
         check_bucket_status = sfn_tasks.LambdaInvoke(
             self,
             "check_bucket_status",
@@ -68,7 +101,7 @@ class FileStorageStack(Stack):
             payload=sfn.TaskInput.from_object(
                 {
                     "state_name": "check_bucket_status",
-                    "report.$": "$",
+                    "report.$": "$.Payload",
                 }
             ),
             result_path="$.check_bucket_status",
@@ -91,34 +124,6 @@ class FileStorageStack(Stack):
             output_path="$.block_s3_bucket",
         ).add_catch(handler=send_error_report, result_path="$.exception")
 
-        copy_object_to_quarantine_bucket = sfn_tasks.LambdaInvoke(
-            self,
-            "copy_object_to_quarantine_bucket",
-            lambda_function=dc_lambda,
-            payload=sfn.TaskInput.from_object(
-                {
-                    "state_name": "copy_object_to_quarantine_bucket",
-                    "report.$": "$.Payload",
-                }
-            ),
-            result_path="$.copy_object_to_quarantine_bucket",
-            output_path="$.copy_object_to_quarantine_bucket",
-        ).add_catch(handler=send_error_report, result_path="$.exception")
-
-        remove_object_from_parent_bucket = sfn_tasks.LambdaInvoke(
-            self,
-            "remove_object_from_parent_bucket",
-            lambda_function=dc_lambda,
-            payload=sfn.TaskInput.from_object(
-                {
-                    "state_name": "remove_object_from_parent_bucket",
-                    "report.$": "$.Payload",
-                }
-            ),
-            result_path="$.remove_object_from_parent_bucket",
-            output_path="$.remove_object_from_parent_bucket",
-        ).add_catch(handler=send_error_report, result_path="$.exception")
-
         send_report = sfn_tasks.LambdaInvoke(
             self,
             "send_report",
@@ -133,16 +138,16 @@ class FileStorageStack(Stack):
         )
 
         definition = (
-            check_bucket_status.next(
+            copy_object_to_quarantine_bucket.next(remove_object_from_parent_bucket)
+            .next(check_bucket_status)
+            .next(
                 previously_blocked.when(
-                    sfn.Condition.string_equals("$.Payload.is_blocked", "true"),
+                    sfn.Condition.string_equals("$.Payload.is_blocked", "False"),
                     block_s3_bucket,
                 )
                 .otherwise(sfn.Pass(self, "Continue"))
                 .afterwards()
             )
-            .next(copy_object_to_quarantine_bucket)
-            .next(remove_object_from_parent_bucket)
             .next(send_report)
         )
 

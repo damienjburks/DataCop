@@ -150,10 +150,10 @@ class S3Service:
         """
         Copies an S3 bucket from one bucket to the target bucket.
         """
-        source_copy_json = {"Bucket": original_bucket_name, "Key": target_object_key}
-        self.s3_resource.meta.client.copy(
-            source_copy_json, target_bucket_name, original_object_key
-        )
+        copy_source = {"Bucket": original_bucket_name, "Key": original_object_key}
+        target_bucket_res = self.s3_resource.Bucket(target_bucket_name)
+        target_obj = target_bucket_res.Object(target_object_key)
+        target_obj.copy(copy_source)
         self.logger.info("Object has been copied successfully!")
 
         return {"targetBucketName": target_bucket_name, "fileName": target_object_key}

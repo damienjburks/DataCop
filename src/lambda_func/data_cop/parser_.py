@@ -12,7 +12,7 @@ from data_cop.logging_config import LoggerConfig
 from data_cop.enums_ import DataCopEnum
 
 
-class EventParser:
+class EventParser:  # pylint: disable=inconsistent-return-statements
     """
     This class is responsible for parsing the event and
     figuring out what state machine it should be sent to, if applicable.
@@ -124,21 +124,3 @@ class MacieLogParser:
             "object_path": s3_object_path,
             "severity": severity,
         }
-
-
-class FileStorageParser:
-    """
-    This class is responsible for parsing the results from the Trend Micro's
-    File Storage Parser.
-    """
-
-    def __init__(self, event):
-        self.logger = LoggerConfig().configure(type(self).__name__)
-        self.event = event
-
-    def parse_results(self):
-        """
-        Parsing the results that is sent from the SNS topic
-        that contains the report from File Storage.
-        """
-        pass

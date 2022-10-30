@@ -1,3 +1,6 @@
+"""
+Module for DataCop and Macie Stack :)
+"""
 from aws_cdk import RemovalPolicy, Fn
 from aws_cdk import (
     Stack,

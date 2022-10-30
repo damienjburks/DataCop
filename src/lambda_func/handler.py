@@ -63,7 +63,7 @@ def state_copy_object_to_quarantine_bucket(event, boto_session):
     # Parse the event and pull out the bucket name
     # and get the target bucket name
     original_bucket_name = event["report"]["bucket_name"]
-    original_object_key_path = event["report"]["object_path"]
+    original_object_key_path = event["report"]["object_path"][1:]
     target_object_key_path = f"{original_bucket_name}/{event['report']['object_key']}"
     target_bucket_name = ssm_service.get_quarantine_bucket_name()
 
@@ -79,6 +79,7 @@ def state_copy_object_to_quarantine_bucket(event, boto_session):
         "original_bucket_name": original_bucket_name,
         "target_bucket_name": target_bucket_name,
         "target_bucket_path": target_object_key_path,
+        "original_object_key_path": original_object_key_path,
     }
 
 
@@ -89,13 +90,13 @@ def state_remove_object_from_parent_bucket(event, boto_session):
     """
     s3_svc = S3Service(boto_session)
 
-    original_bucket_name = event["report"]["bucket_name"]
-    original_object_key_path = event["report"]["object_path"]
+    original_bucket_name = event["report"]["original_bucket_name"]
+    original_object_key_path = event["report"]["original_object_key_path"]
 
     s3_svc.delete_object_from_bucket(original_object_key_path, original_bucket_name)
 
     return {
-        "original_bucket_name": original_bucket_name,
+        "bucket_name": original_bucket_name,
         "deleted_object_key": original_object_key_path,
     }
 

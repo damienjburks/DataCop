@@ -63,6 +63,14 @@ class CoreStack(Stack):
             description="This value will be used to block S3 buckets.",
             string_value="HIGH",
         )
+        if environ.get("QUARANTINE_S3_BUCKET_NAME") is not None:
+            ssm.StringParameter(
+                self,
+                "DataCopQuarantineBucketSSM",
+                parameter_name="DataCopQuarantineBucket",
+                description="This is the s3 bucket necessary for the Quarantine Bucket.",
+                string_value=environ.get("QUARANTINE_S3_BUCKET_NAME"),
+            )
 
         # SNS Topic Creation
         datacop_topic = sns.Topic(self, "DataCopTopic", display_name="AWS DataCop")
@@ -138,7 +146,7 @@ class CoreStack(Stack):
                         iam.PolicyStatement(
                             sid="AllowPutAndGetActions",
                             effect=Effect.ALLOW,
-                            actions=["s3:Put*", "s3:Get*", "s3:List*"],
+                            actions=["s3:Put*", "s3:Get*", "s3:List*", "s3:Delete*"],
                             resources=["arn:aws:s3:::*"],
                         ),
                         iam.PolicyStatement(
