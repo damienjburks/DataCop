@@ -1,5 +1,6 @@
 import os
 import boto3
+import configparser
 
 from invoke import task
 
@@ -42,11 +43,21 @@ def pre_setup(c):
     :return:
     """
     account_id = boto3.client("sts").get_caller_identity().get("Account")
-    s3_bucket_name = f"datacop-findings-{account_id}"
-    kms_key_alias = "alias/data-cop-kms-key"
 
-    os.environ["S3_BUCKET_NAME"] = s3_bucket_name
-    os.environ["KMS_KEY_ALIAS"] = kms_key_alias
+    config = configparser.ConfigParser()
+    config.read("config.ini")
+
+    os.environ[
+        "S3_BUCKET_NAME"
+    ] = f"{config['configuration']['s3_bucket_name']}-{account_id}"
+    os.environ["KMS_KEY_ALIAS"] = config["configuration"]["kms_key_alias"]
+    os.environ["EMAIL_ADDRESS"] = config["configuration"]["email_address"]
+    os.environ["FSS_SNS_TOPIC_ARN"] = config["configuration"][
+        "file_storage_sns_topic_arn"
+    ]
+    os.environ["QUARANTINE_S3_BUCKET_NAME"] = config["configuration"][
+        "quarantine_s3_bucket_name"
+    ]
 
 
 @task
@@ -70,19 +81,18 @@ def disable_macie(c):
 
 
 @task(pre=[pre_setup], post=[post_setup])
-def deploy(c, email_address):
+def deploy(c):
     """
     Bootstraps and deploys the CDK templates to AWS
-    :param email_address: Necessary for SNS Topic Subscription
     :return:
     """
     c.run(
         f"cd src/cdk-cloudformation && "
         f"cdk bootstrap && "
-        f"cdk deploy --require-approval=never "
-        f"--parameters bucketName={os.environ['S3_BUCKET_NAME']} "
-        f"--parameters kmsKeyAlias={os.environ['KMS_KEY_ALIAS']} "
-        f"--parameters snsEmailAddress={email_address}"
+        f"cdk deploy --all --require-approval=never "
+        f"--parameters DataCopCore:bucketName={os.environ['S3_BUCKET_NAME']} "
+        f"--parameters DataCopCore:kmsKeyAlias={os.environ['KMS_KEY_ALIAS']} "
+        f"--parameters DataCopCore:snsEmailAddress={os.environ['EMAIL_ADDRESS']}"
     )
 
 

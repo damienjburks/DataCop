@@ -4,8 +4,67 @@ Module with parsing classes (File/String/Macie)
 
 import gzip
 import json
+import re
+import ast
 
+from urllib.parse import urlparse
 from data_cop.logging_config import LoggerConfig
+from data_cop.enums_ import DataCopEnum
+
+
+class EventParser:  # pylint: disable=inconsistent-return-statements
+    """
+    This class is responsible for parsing the event and
+    figuring out what state machine it should be sent to, if applicable.
+    """
+
+    def __init__(self, event):
+        self.logger = LoggerConfig().configure(type(self).__name__)
+        self.event = event
+
+    def transform_event(self):
+        """Transforms the event into a dictionary"""
+        return ast.literal_eval(str(self.event))
+
+    def determine_type(self):
+        """Function that determines the type of event"""
+        event_records = self.transform_event()
+
+        try:
+            for record in event_records["Records"]:  # Should only be one :)
+                topic_arn = record["Sns"]["TopicArn"]
+                if "FileStorageSecurity" in topic_arn:
+                    return DataCopEnum.FSS
+        except KeyError:
+            self.logger.info("Ignoring key error - most likely not an SNS event.")
+
+        return DataCopEnum.MACIE
+
+    def create_sfn_payload(self, message_type):
+        """
+        Function that determines the message type,
+        parses message accordingly, and creates sfn payload.
+        """
+        event_records = self.transform_event()
+
+        if message_type == DataCopEnum.FSS:
+            message = event_records["Records"][0]["Sns"]["Message"]
+            message_json = json.loads(message)
+
+            url_segments = urlparse(message_json["file_url"])
+
+            bucket_url_regex = "(.*).s3.amazonaws.com"
+            pattern = re.compile(bucket_url_regex)
+            matches = re.match(pattern, url_segments.netloc)
+            bucket_name = matches.groups()[0]
+
+            object_name = url_segments.path.split("/")[-1]
+
+            return {
+                "bucket_name": bucket_name,
+                "object_key": object_name,
+                "object_path": url_segments.path,
+            }
 
 
 class FileParser:

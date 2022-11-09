@@ -1,7 +1,8 @@
 """
-Module for deploying all CDK core resources.
+Module for deploying CDK core resources for DataCop.
 """
-from aws_cdk import RemovalPolicy, CfnParameter
+from os import environ
+from aws_cdk import RemovalPolicy, CfnParameter, CfnOutput
 from aws_cdk import (
     Stack,
     App,
@@ -12,27 +13,20 @@ from aws_cdk import (
     aws_iam as iam,
     aws_kms as kms,
     aws_cloudtrail as cloudtrail,
-    aws_events as events,
-    aws_events_targets as event_targets,
-    aws_stepfunctions as sfn,
-    aws_stepfunctions_tasks as sfn_tasks,
     aws_sns as sns,
     aws_ssm as ssm,
 )
 from aws_cdk.aws_iam import Effect
-from aws_cdk.aws_logs import RetentionDays
 from aws_cdk.aws_sns_subscriptions import EmailSubscription
 
 from .constructs.lambda_packager import LambdaPackager
 
 
-class DataCopCoreStack(Stack):
+class CoreStack(Stack):
     # pylint: disable=too-many-locals
     """
     This class contains the logic for deploying the following resources:
     - S3 Buckets
-    - Lambda Function for DataCop
-    - Step Function & corresponding Log Group
     - KMS Key
     - SNS Topic
     """
@@ -69,6 +63,14 @@ class DataCopCoreStack(Stack):
             description="This value will be used to block S3 buckets.",
             string_value="HIGH",
         )
+        if environ.get("QUARANTINE_S3_BUCKET_NAME") is not None:
+            ssm.StringParameter(
+                self,
+                "DataCopQuarantineBucketSSM",
+                parameter_name="DataCopQuarantineBucket",
+                description="This is the s3 bucket necessary for the Quarantine Bucket.",
+                string_value=environ.get("QUARANTINE_S3_BUCKET_NAME"),
+            )
 
         # SNS Topic Creation
         datacop_topic = sns.Topic(self, "DataCopTopic", display_name="AWS DataCop")
@@ -87,7 +89,7 @@ class DataCopCoreStack(Stack):
             code=_lambda.Code.from_asset(path=lambda_package_dir),
         )
 
-        # Create KMS key and add policy for macie
+        # Create KMS key
         kms_key = kms.Key(
             self,
             "DataCopKMSKey",
@@ -114,7 +116,7 @@ class DataCopCoreStack(Stack):
         # Create S3 Bucket w/ S3 Managed Encryption
         s3_bucket = s3.Bucket(
             self,
-            "DataCopS3Bucket",
+            "DataCopBucket",
             bucket_name=BUCKET_NAME,
             auto_delete_objects=True,
             removal_policy=RemovalPolicy.DESTROY,
@@ -122,16 +124,29 @@ class DataCopCoreStack(Stack):
         )
         s3_bucket.policy.document.creation_stack.clear()  # Clearing bucket policy
 
+        if environ.get("QUARANTINE_S3_BUCKET_NAME") is not None:
+            # Create Quarantine S3 Bucket w/ S3 Managed Encryption
+            quarantine_s3_bucket = s3.Bucket(
+                self,
+                "DataCopQuarantineBucket",
+                bucket_name=environ.get("QUARANTINE_S3_BUCKET_NAME"),
+                auto_delete_objects=True,
+                removal_policy=RemovalPolicy.DESTROY,
+                encryption=s3.BucketEncryption.S3_MANAGED,
+            )
+            quarantine_s3_bucket.policy.document.creation_stack.clear()  # Clearing bucket policy
+
+        # Lambda Function Permissions
         dk_lambda.role.add_managed_policy(
             iam.ManagedPolicy(
                 self,
-                "DataCopS3PolicyInline",
+                "DataCopLambdaPolicyInline",
                 document=iam.PolicyDocument(
                     statements=[
                         iam.PolicyStatement(
                             sid="AllowPutAndGetActions",
                             effect=Effect.ALLOW,
-                            actions=["s3:Put*", "s3:Get*", "s3:List*"],
+                            actions=["s3:Put*", "s3:Get*", "s3:List*", "s3:Delete*"],
                             resources=["arn:aws:s3:::*"],
                         ),
                         iam.PolicyStatement(
@@ -156,9 +171,23 @@ class DataCopCoreStack(Stack):
                             actions=["sns:Publish", "sns:ListTopics"],
                             resources=["*"],
                         ),
+                        iam.PolicyStatement(
+                            sid="AllowSfnInteractions",
+                            effect=Effect.ALLOW,
+                            actions=[
+                                "states:ListStateMachines",
+                                "states:StartExecution",
+                            ],
+                            resources=["*"],
+                        ),
                     ]
                 ),
             )
+        )
+        dk_lambda.add_permission(
+            "AllowInvokeViaSns",
+            principal=iam.ServicePrincipal("sns.amazonaws.com"),
+            action="lambda:InvokeFunction",
         )
 
         # Creating bucket policy & attaching it to s3 bucket
@@ -185,124 +214,23 @@ class DataCopCoreStack(Stack):
             read_write_type=cloudtrail.ReadWriteType.WRITE_ONLY,
         )
 
-        # Create Step Function w/ states
-        sfn_log_group = logs.LogGroup(
+        # Create Outputs for this CFT
+        CfnOutput(
             self,
-            "DataCopSfnLogGroup",
-            log_group_name="DataCopSfnLogGroup",
-            removal_policy=RemovalPolicy.DESTROY,
-            retention=RetentionDays.INFINITE,
+            "DataCopLambdaFunctionArn",
+            value=dk_lambda.function_arn,
+            export_name="LambdaFunctionArn",
         )
-        send_error_report = sfn_tasks.LambdaInvoke(
+        CfnOutput(
             self,
-            "send_error_report",
-            lambda_function=dk_lambda,
-            payload=sfn.TaskInput.from_object(
-                {
-                    "state_name": "send_error_report",
-                    "report.$": "$.exception",
-                    "execution_id.$": "$$.Execution.Id",
-                }
-            ),
+            "DataCopS3BucketArn",
+            value=s3_bucket.bucket_arn,
+            export_name="S3BucketArn",
         )
-
-        determine_severity = sfn_tasks.LambdaInvoke(
-            self,
-            "determine_severity",
-            lambda_function=dk_lambda,
-            payload=sfn.TaskInput.from_object(
-                {
-                    "state_name": "determine_severity",
-                    "Payload.$": "$",
-                }
-            ),
-            result_path="$.determine_severity",
-            output_path="$.determine_severity",
-        ).add_catch(handler=send_error_report, result_path="$.exception")
-
-        block_bucket_boolean = sfn.Choice(self, "Block Bucket?")
-
-        check_bucket_status = sfn_tasks.LambdaInvoke(
-            self,
-            "check_bucket_status",
-            lambda_function=dk_lambda,
-            payload=sfn.TaskInput.from_object(
-                {
-                    "state_name": "check_bucket_status",
-                    "report.$": "$.Payload",
-                }
-            ),
-            result_path="$.check_bucket_status",
-            output_path="$.check_bucket_status",
-        )
-
-        previously_blocked = sfn.Choice(self, "Previously Blocked?")
-
-        block_s3_bucket = sfn_tasks.LambdaInvoke(
-            self,
-            "block_s3_bucket",
-            lambda_function=dk_lambda,
-            payload=sfn.TaskInput.from_object(
-                {
-                    "state_name": "block_s3_bucket",
-                    "report.$": "$.Payload",
-                }
-            ),
-            result_path="$.block_s3_bucket",
-            output_path="$.block_s3_bucket",
-        ).add_catch(handler=send_error_report, result_path="$.exception")
-
-        send_report = sfn_tasks.LambdaInvoke(
-            self,
-            "send_report",
-            lambda_function=dk_lambda,
-            payload=sfn.TaskInput.from_object(
-                {
-                    "state_name": "send_report",
-                    "report.$": "$.Payload",
-                    "execution_id.$": "$$.Execution.Id",
-                }
-            ),
-        )
-        ignore_bucket_state = sfn.Pass(self, "Ignore Bucket")
-        definition = determine_severity.next(
-            block_bucket_boolean.when(
-                sfn.Condition.is_not_null("$.Payload"),
-                check_bucket_status.next(
-                    previously_blocked.when(
-                        sfn.Condition.string_equals("$.Payload.is_blocked", "true"),
-                        ignore_bucket_state,
-                    ).otherwise(block_s3_bucket.next(send_report))
-                ),
-            ).otherwise(ignore_bucket_state)
-        )
-        dc_state_machine = sfn.StateMachine(
-            self,
-            "DataCopStepFunction",
-            state_machine_name="DataCop",
-            definition=definition,
-            logs=sfn.LogOptions(
-                destination=sfn_log_group,
-                include_execution_data=True,
-                level=sfn.LogLevel.ALL,
-            ),
-            timeout=Duration.minutes(5),
-        )
-
-        # Creating EventBridge Resources
-        dc_event_pattern = events.EventPattern(
-            source=["aws.s3"],
-            detail={
-                "eventSource": ["s3.amazonaws.com"],
-                "eventName": ["PutObject"],
-                "requestParameters": {"bucketName": [s3_bucket.bucket_name]},
-            },
-        )
-        sfn_target = event_targets.SfnStateMachine(dc_state_machine)
-        events.Rule(
-            self,
-            "DataCopEventRule",
-            enabled=True,
-            event_pattern=dc_event_pattern,
-            targets=[sfn_target],
-        )
+        if environ.get("FSS_SNS_TOPIC_ARN") is not None:
+            CfnOutput(
+                self,
+                "DataCopFssSnsTopicArn",
+                value=environ.get("FSS_SNS_TOPIC_ARN"),
+                export_name="FssSnsTopicArn",
+            )

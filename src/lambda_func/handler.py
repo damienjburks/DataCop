@@ -7,7 +7,9 @@ from data_cop.session_config import BotoConfig
 from data_cop.ssm_service import SSMService
 from data_cop.s3_service import S3Service
 from data_cop.sns_service import SnsService
-from data_cop.parser_ import FileParser, MacieLogParser
+from data_cop.sfn_service import SfnService
+from data_cop.parser_ import FileParser, MacieLogParser, EventParser
+from data_cop.enums_ import DataCopEnum
 
 
 def lambda_handler(event, _context):
@@ -20,19 +22,83 @@ def lambda_handler(event, _context):
     """
 
     boto_session = BotoConfig().get_session()
+    state_response = None
 
-    if event["state_name"] == "determine_severity":
-        state_response = state_determine_severity(event, boto_session)
+    if "state_name" not in event:  # It's coming from SNS
+        _enum = EventParser(event).determine_type()
+
+        # DataCop FSS Step Function States
+        if _enum == DataCopEnum.FSS:
+            # Execute the step function
+            sfn_payload = EventParser(event).create_sfn_payload(_enum)
+            sfn_obj = SfnService(boto_session)
+            sfn_obj.execute_sfn(sfn_payload, _enum)
+
+    if event["state_name"] == "check_bucket_status":
+        state_response = state_check_bucket_status(event, boto_session)
     if event["state_name"] == "block_s3_bucket":
         state_response = state_block_s3_bucket(event, boto_session)
+    if event["state_name"] == "copy_object_to_quarantine_bucket":
+        state_response = state_copy_object_to_quarantine_bucket(event, boto_session)
+    if event["state_name"] == "remove_object_from_parent_bucket":
+        state_response = state_remove_object_from_parent_bucket(event, boto_session)
     if event["state_name"] == "send_report":
         state_response = state_send_report(event, boto_session)
     if event["state_name"] == "send_error_report":
         state_response = state_send_error_report(event, boto_session)
-    if event["state_name"] == "check_bucket_status":
-        state_response = state_check_bucket_status(event, boto_session)
+    if event["state_name"] == "determine_severity":
+        state_response = state_determine_severity(event, boto_session)
 
     return state_response
+
+
+def state_copy_object_to_quarantine_bucket(event, boto_session):
+    """
+    Contains logic for copy_object_to_quarantine_bucket
+    in the step function
+    """
+    s3_svc = S3Service(boto_session)
+    ssm_service = SSMService(boto_session)
+
+    # Parse the event and pull out the bucket name
+    # and get the target bucket name
+    original_bucket_name = event["report"]["bucket_name"]
+    original_object_key_path = event["report"]["object_path"][1:]
+    target_object_key_path = f"{original_bucket_name}/{event['report']['object_key']}"
+    target_bucket_name = ssm_service.get_quarantine_bucket_name()
+
+    # Copy object from original bucket to quarantine
+    s3_svc.copy_object_to_bucket(
+        original_object_key_path,
+        target_object_key_path,
+        original_bucket_name,
+        target_bucket_name,
+    )
+
+    return {
+        "original_bucket_name": original_bucket_name,
+        "target_bucket_name": target_bucket_name,
+        "target_bucket_path": target_object_key_path,
+        "original_object_key_path": original_object_key_path,
+    }
+
+
+def state_remove_object_from_parent_bucket(event, boto_session):
+    """
+    Contains logic for remove_object_from_parent_bucket
+    in the step function
+    """
+    s3_svc = S3Service(boto_session)
+
+    original_bucket_name = event["report"]["original_bucket_name"]
+    original_object_key_path = event["report"]["original_object_key_path"]
+
+    s3_svc.delete_object_from_bucket(original_object_key_path, original_bucket_name)
+
+    return {
+        "bucket_name": original_bucket_name,
+        "deleted_object_key": original_object_key_path,
+    }
 
 
 def state_determine_severity(event, boto_session):

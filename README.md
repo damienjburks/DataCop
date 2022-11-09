@@ -3,6 +3,9 @@
 <p align="center"><img src="./documentation/images/logo.png" alt="DataCop Logo" width="200px" height="200px" /></p>
 
 ---
+>**NOTE:** This project is pending documentation updates to support refactoring and 
+>the addition of a new feature. **Those updates should be included by 11/12/2022**. Thanks
+>for using DataCop.
 
 DataCop is an custom AWS framework that mitigates the 
 potential of vulnerable S3 buckets. Reliant on AWS Macie results, DataCop enables professionals that leverage AWS Macie
