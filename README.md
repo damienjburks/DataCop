@@ -42,20 +42,20 @@ outlined below:
 filled out properly before you deploy DataCop. An example of the file with an explanation
 of the key/value pairs are highlighted below:
   
-  #### Figure 0: Modify config.ini file
-  ```ini
-  [configuration]
-  s3_bucket_name = your_bucket_name # MANDATORY
-  kms_key_alias = alias/datacop-kms-key # MANDATORY
-  email_address = sample_email_address@gmail.com # MANDATORY
-  severity = LOW|MEDIUM|HIGH # MANDATORY
-  file_storage_sns_topic_arn = arnforFSS # OPTIONAL
-  quarantine_s3_bucket_name = your-quarantine-items # OPTIONAL
-  ```
+    #### Figure 0: Modify config.ini file
+    ```ini
+    [configuration]
+    s3_bucket_name = your_bucket_name # MANDATORY
+    kms_key_alias = alias/datacop-kms-key # MANDATORY
+    email_address = sample_email_address@gmail.com # MANDATORY
+    severity = LOW|MEDIUM|HIGH # MANDATORY
+    file_storage_sns_topic_arn = arnforFSS # OPTIONAL
+    quarantine_s3_bucket_name = your-quarantine-items # OPTIONAL
+    ```
 
-  >**NOTE**: The _optional_ parameters are in-fact, optional.
-  >You do not have to specify these if you do not have CloudOne FSS deployed
-  >into your environment.
+    >**NOTE**: The _optional_ parameters are in-fact, optional.
+    >You do not have to specify these if you do not have CloudOne FSS deployed
+    >into your environment.
 
 1. Create and activate your virtual environment:
     
