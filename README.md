@@ -7,17 +7,20 @@
 >the addition of a new feature. **Those updates should be included by 11/12/2022**. Thanks
 >for using DataCop.
 
-DataCop is an custom AWS framework that mitigates the 
-potential of vulnerable S3 buckets. Reliant on AWS Macie results, DataCop enables professionals that leverage AWS Macie
-to automatically block S3 buckets that contain PII or any classified information.
+DataCop is an custom AWS framework that mitigates S3 bucket attack 
+vectors based on customer configuration. By default, this tool relies on AWS Macie results to automatically 
+block S3 buckets that contain PII or any classified information. However, this framework supports the following 
+third party services:
+- Trend Micro CloudOne File Storage Security (FSS)
+>>**NOTE:** All other integrations from third party vendors is completely optional.
 
 Features
 ---
 
-* Automatically provisioned infrastructure to bridge the 
-cap between Macie and S3 with AWS CDK
-* Configurable settings for bucket blocking 
+* Automatically provisioned infrastructure with AWS CDK
+* Configurable settings for bucket blocking for Macie and FSS
 * Event-driven S3 bucket blocking
+* Highly scalable and extensible
 
 Architecture
 ---
