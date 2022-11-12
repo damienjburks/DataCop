@@ -4,7 +4,7 @@ BSides DFW 2022
 This section of the repository contains the slide deck that I used to speak at [BSides DFW 2022](http://www.securitybsides.com/w/page/149758035/DFW_2022).
 Information about the talk is listed below: 
 
-- Title: `Minimizing AWS S3 attack vectors at scale`.
+- Title: `Minimizing AWS S3 attack vectors at scale`
 - Abstract: 
 >AWS provides services and third-party solutions, such as AWS Macie and Trend Micro, that can help us secure our S3 buckets and associated components. 
 >Macie is a fully-managed data privacy and data security solution that provides customizable alerts and findings on sensitive data found in S3. 
