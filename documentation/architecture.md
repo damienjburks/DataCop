@@ -1,11 +1,11 @@
-# Architecture: DataCop
+# Architecture: DataCop W/ Macie
 
 <p align="center"><img src="./images/example_architecture_macie.drawio.png" alt="DataCop Architecture Diagram"/></p>
 
 ---
 
 This diagram highlights the architecture of DataCop. Each of the numbers represent the flow
-of how DataCop works. 
+of how DataCop works for Macie.
 
 ## Scenario w/ Explanation
 

@@ -111,4 +111,5 @@ look at the [Contributing Documentation](./documentation/contributing.md).
 
 Presentations
 ---
-- Automated S3 Blocking with AWS Macie and DataCop @ DevOpsDays Dallas - 5th Anniversary 2022: [Abstract](https://devopsdays.org/events/2022-dallas/program/damien-burks/)
+- [Automated S3 Blocking with AWS Macie and DataCop @ DevOpsDays Dallas - 5th Anniversary 2022](./documentation/devopsdays_dallas_2022/README.md)
+- [Minimizing AWS S3 Bucket Attack Vectors at scale @ BSidesDFW - 2022](./documentation/bsides_dfw_2022/README.md)
