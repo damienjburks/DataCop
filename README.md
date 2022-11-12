@@ -3,21 +3,20 @@
 <p align="center"><img src="./documentation/images/logo.png" alt="DataCop Logo" width="200px" height="200px" /></p>
 
 ---
->**NOTE:** This project is pending documentation updates to support refactoring and 
->the addition of a new feature. **Those updates should be included by 11/12/2022**. Thanks
->for using DataCop.
-
-DataCop is an custom AWS framework that mitigates the 
-potential of vulnerable S3 buckets. Reliant on AWS Macie results, DataCop enables professionals that leverage AWS Macie
-to automatically block S3 buckets that contain PII or any classified information.
+DataCop is an custom AWS framework that mitigates S3 bucket attack 
+vectors based on customer configuration. By default, this framework relies on AWS Macie results to automatically 
+block S3 buckets that contain PII or any classified information. However, this framework supports the following 
+third party services:
+- Trend Micro CloudOne File Storage Security (FSS)
+>**NOTE:** All other integrations from third party vendors is completely optional.
 
 Features
 ---
 
-* Automatically provisioned infrastructure to bridge the 
-cap between Macie and S3 with AWS CDK
-* Configurable settings for bucket blocking 
+* Automatically provisioned infrastructure with AWS CDK
+* Configurable settings for bucket blocking for Macie and FSS
 * Event-driven S3 bucket blocking
+* Highly scalable and extensible
 
 Architecture
 ---
@@ -38,6 +37,25 @@ to ensure that you have the following installed:
 
 The installation process for DataCop is fairly straightforward. Please follow the steps
 outlined below:
+
+0. Configure your `config.ini` file. This file is **EXTREMELY IMPORTANT**, and it must be 
+filled out properly before you deploy DataCop. An example of the file with an explanation
+of the key/value pairs are highlighted below:
+  
+  #### Figure 0: Modify config.ini file
+  ```ini
+  [configuration]
+  s3_bucket_name = your_bucket_name # MANDATORY
+  kms_key_alias = alias/datacop-kms-key # MANDATORY
+  email_address = sample_email_address@gmail.com # MANDATORY
+  severity = LOW|MEDIUM|HIGH # MANDATORY
+  file_storage_sns_topic_arn = arnforFSS # OPTIONAL
+  quarantine_s3_bucket_name = your-quarantine-items # OPTIONAL
+  ```
+
+  >**NOTE**: The _optional_ parameters are in-fact, optional.
+  >You do not have to specify these if you do not have CloudOne FSS deployed
+  >into your environment.
 
 1. Create and activate your virtual environment:
     
@@ -91,10 +109,10 @@ run the following command to deploy the CDK stack:
     
 #### Figure 4. Deploying DataCop
 ```text
-(.env) $ invoke deploy your_email_address
+(.env) $ invoke deploy
 ```
-During the deployment phase, the email address will be subscribed to the SNS Topic. This 
-parameter is **required**, so make sure the email address is valid!
+**Please ensure that you have configured the config.ini file prior to executing this command.
+If you have not, please refer to Step 0.**
 
 >**NOTE:** This command will bootstrap the default AWS account & profile.
 Afterward, it will deploy everything with `cdk deploy`. 
@@ -111,4 +129,5 @@ look at the [Contributing Documentation](./documentation/contributing.md).
 
 Presentations
 ---
-- Automated S3 Blocking with AWS Macie and DataCop @ DevOpsDays Dallas - 5th Anniversary 2022: [Abstract](https://devopsdays.org/events/2022-dallas/program/damien-burks/)
+- [Automated S3 Blocking with AWS Macie and DataCop @ DevOpsDays Dallas - 5th Anniversary 2022](./documentation/devopsdays_dallas_2022/README.md)
+- [Minimizing AWS S3 attack vectors at scale @ BSidesDFW - 2022](./documentation/bsides_dfw_2022/README.md)
