@@ -1,6 +1,6 @@
 # Architecture: DataCop
 
-<p align="center"><img src="./images/architecture_diagram_revamp.drawio.png" alt="DataCop Architecture Diagram"/></p>
+<p align="center"><img src="./images/example_architecture_macie.drawio.png" alt="DataCop Architecture Diagram"/></p>
 
 ---
 
