@@ -17,6 +17,7 @@ abstract to this document, as well as the link to the YouTube Video:
 >
 >Following the architectural deep-dive, there will be more information on the value added to existing processes if this solution were to be adopted. To conclude, those who attend this talk will leave with practical knowledge on to automate the remediation of data risks in S3 based on Macie’s findings.
 
+PowerPoint Presentation: [DevOpsDays - Dallas Final PPTX](./datacop_devopsdays_dallas_final.pptx)
 YouTube Video: [Automated S3 Blocking with AWS Macie & DataCop](https://youtu.be/xPvfD-gsuo4)
 
 **PSA:** This was my first conference that I've spoken at that pertains to my career.
