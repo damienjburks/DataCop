@@ -28,5 +28,6 @@ Information about the talk is listed below:
 >To conclude, those who attend this talk will leave with practical knowledge on automating the remediation of S3 buckets on Macie's and Trend Micro Cloud One's findings.
 
 - Slide Deck: [BSides DFW Final Deck](./bsides_dfw_2022_preso_final.pptx)
+- YouTube Video: [Minimizing AWS S3 attack vectors at scale](https://www.youtube.com/watch?v=-vIJBvUA4hI)
 
 **PSA:** This was my second talk that I've given in person, and I can say it was the most engaging talk.

@@ -65,8 +65,6 @@ of the key/value pairs are highlighted below:
     (datacop-venv) $ # You've activated your VENV
     ```
 
-    ![Create/Activate Virtual Environment](./documentation/images/create_activate_venv.gif)
-
 2. Install the dependencies:
 
     #### Figure 2: Install Python Dependencies
@@ -74,8 +72,6 @@ of the key/value pairs are highlighted below:
     (datacop-venv) $ pip install -r requirements.txt
     ```
     
-    ![Installing Dependencies](./documentation/images/install_deps.gif)
-
 Once you've installed those requirements, you're good to deploy the application.
 
 Commands
