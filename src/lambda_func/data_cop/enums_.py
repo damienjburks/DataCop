@@ -12,6 +12,6 @@ class DataCopEnum(Enum):
     the type of state machine that the event must be passed to.
     """
 
-    DEFAULT = 0
     FSS = 1
     MACIE = 2
+    REKOGNITION = 3

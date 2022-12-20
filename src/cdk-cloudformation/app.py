@@ -5,17 +5,20 @@ Module for running the CDK app and deploying all infrastructure.
 import aws_cdk as cdk
 
 from templates.core_stack import CoreStack
+from templates.integrations.aws_rekognition_stack import RekognitionStack
 from templates.integrations.aws_macie_stack import MacieStack
-from templates.integrations.file_storage_stack import FileStorageStack
+from templates.integrations.tm_file_storage_stack import FileStorageStack
 
 app = cdk.App()
 
 core_stack = CoreStack(app, "DataCopCore")
-aws_macie_stack = MacieStack(app, "DataCopMacieStack")
-fss_stack = FileStorageStack(app, "DataCopFssStack")
+rekognition_stack = RekognitionStack(app, "DCRekogitionStack")
+# aws_macie_stack = MacieStack(app, "DataCopMacieStack")
+# fss_stack = FileStorageStack(app, "DataCopFssStack")
 
 # Dependencies
-aws_macie_stack.node.add_dependency(core_stack)
-fss_stack.node.add_dependency(core_stack)
+# aws_macie_stack.node.add_dependency(core_stack)
+# fss_stack.node.add_dependency(core_stack)
+rekognition_stack.add_dependency(core_stack)
 
 app.synth()

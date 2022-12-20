@@ -15,7 +15,7 @@ from data_cop.enums_ import DataCopEnum
 def lambda_handler(event, _context):
     """
     Handler that contains core logic for blocking S3 buckets
-    and parsing Macie results
+    and parsing results
     :param event:
     :param context:
     :return:
@@ -28,11 +28,15 @@ def lambda_handler(event, _context):
         _enum = EventParser(event).determine_type()
 
         # DataCop FSS Step Function States
-        if _enum == DataCopEnum.FSS:
+        if _enum == DataCopEnum.MACIE:
+            pass  # Nothing to do here, data is already setup to be parsed
+        elif _enum == DataCopEnum.FSS:
             # Execute the step function
             sfn_payload = EventParser(event).create_sfn_payload(_enum)
             sfn_obj = SfnService(boto_session)
             sfn_obj.execute_sfn(sfn_payload, _enum)
+        elif _enum == DataCopEnum.REKOGNITION:
+            pass
 
     if event["state_name"] == "check_bucket_status":
         state_response = state_check_bucket_status(event, boto_session)
