@@ -1,7 +1,7 @@
 astroid==2.11.6
 attrs==22.1.0
 aws-cdk-lib==2.45.0
-black==22.6.0
+black==22.12.0
 boto3==1.24.7
 botocore==1.27.69
 cattrs==22.1.0
