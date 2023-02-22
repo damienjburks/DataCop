@@ -72,6 +72,7 @@ class MacieStack(Stack):
                 {
                     "state_name": "determine_severity",
                     "Payload.$": "$",
+                    "StateMachineInfo.$": "$$.Execution",
                 }
             ),
             result_path="$.determine_severity",
@@ -153,13 +154,19 @@ class MacieStack(Stack):
             detail={
                 "eventSource": ["s3.amazonaws.com"],
                 "eventName": ["PutObject"],
-                "requestParameters": {"bucketName": [s3_bucket.bucket_name]},
+                "requestParameters": {
+                    "bucketName": [s3_bucket.bucket_name],
+                    "key": [  # Filter on these file types
+                        {"suffix": ".json"},
+                    ],
+                },
             },
         )
         sfn_target = event_targets.SfnStateMachine(dc_state_machine)
         events.Rule(
             self,
-            "DataCopMacieEventRule",
+            "DCMacieEventRule",
+            rule_name="DCMacieEventRule",
             enabled=True,
             event_pattern=macie_event_pattern,
             targets=[sfn_target],

@@ -29,6 +29,29 @@ DENY_ALL_POLICY = {
     ],
 }
 
+S3_OBJECTS = []
+DENY_OBJECTS_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "DenyAllObjectsPolicy",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": ["s3:*"],
+            "Resource": S3_OBJECTS,
+            "Condition": {
+                "StringNotLike": {
+                    "aws:PrincipalARN": [
+                        "arn:aws:iam::*:user/DataCop",
+                        "arn:aws:iam::*:role/DataCop*",
+                        "arn:aws:iam::*:root",
+                    ]
+                }
+            },
+        }
+    ],
+}
+
 
 class S3Service:
     """

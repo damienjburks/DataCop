@@ -1,8 +1,11 @@
 import os
 import boto3
 import configparser
-
+import inspect
 from invoke import task
+
+if not hasattr(inspect, "getargspec"):
+    inspect.getargspec = inspect.getfullargspec
 
 
 @task
@@ -52,12 +55,16 @@ def pre_setup(c):
     ] = f"{config['configuration']['s3_bucket_name']}-{account_id}"
     os.environ["KMS_KEY_ALIAS"] = config["configuration"]["kms_key_alias"]
     os.environ["EMAIL_ADDRESS"] = config["configuration"]["email_address"]
-    os.environ["FSS_SNS_TOPIC_ARN"] = config["configuration"][
-        "file_storage_sns_topic_arn"
-    ]
+
+    if config["configuration"].get("file_storage_sns_topic_arn") is not None:
+        os.environ["FSS_SNS_TOPIC_ARN"] = config["configuration"].get(
+            "file_storage_sns_topic_arn"
+        )
+
     os.environ["QUARANTINE_S3_BUCKET_NAME"] = config["configuration"][
         "quarantine_s3_bucket_name"
     ]
+    os.environ["DATACOP_SEVERITY"] = config["configuration"]["severity"]
 
 
 @task

@@ -1,5 +1,6 @@
 """
-Module for deploying necessary infrastructure to fully leverage AWS Rekognition.
+Module for deploying necessary infrastructure to fully leverage AWS Rekognition
+to parse image text.
 """
 
 from aws_cdk import RemovalPolicy, Fn
@@ -14,18 +15,27 @@ from aws_cdk import (
     aws_stepfunctions_tasks as sfn_tasks,
     aws_sns as sns,
     aws_sns_subscriptions as sns_subs,
+    aws_events as events,
+    aws_events_targets as event_targets,
+    aws_s3 as s3,
 )
 
-STEP_FUNCTION_NAME = "DCRekognitionFunction"
+STEP_FUNCTION_NAME = "DCRekognitionImageFunction"
 
 
-class RekognitionStack(Stack):
+class RekognitionImageStack(Stack):
     """
     This class contains the logic for deploying the following resources: (WIP)
     """
 
     def __init__(self, scope: App, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
+
+        # Import S3 Bucket
+        s3_bucket_arn = Fn.import_value("S3BucketArn")
+        s3_bucket = s3.Bucket.from_bucket_arn(
+            self, id="DataCopS3Bucket", bucket_arn=s3_bucket_arn
+        )
 
         # Import Lambda Function
         dc_lambda_function_arn = Fn.import_value("LambdaFunctionArn")
@@ -35,15 +45,15 @@ class RekognitionStack(Stack):
 
         # Create SNS Topic and subscribe it to the lambda function
         sns_topic = sns.Topic(
-            self, "DCRekognitionTopic", display_name="DCRekognitionTopic"
+            self, "DCRekognitionImageTopic", display_name="DCRekognitionImageTopic"
         )
         sns_topic.add_subscription(sns_subs.LambdaSubscription(dc_lambda))
 
         # Create Step Function w/ states
         sfn_log_group = logs.LogGroup(
             self,
-            "DCRekognitionSfnLogGroup",
-            log_group_name="DCRekognitionSfnLogGroup",
+            "DCRekognitionImageSfnLogGroup",
+            log_group_name="DCRekognitionImageSfnLogGroup",
             removal_policy=RemovalPolicy.DESTROY,
             retention=RetentionDays.INFINITE,
         )
@@ -62,78 +72,50 @@ class RekognitionStack(Stack):
             ),
         )
 
-        check_event = sfn_tasks.LambdaInvoke(
+        detect_text_in_image = sfn_tasks.LambdaInvoke(
             self,
-            "check_event",
+            "detect_text_in_image",
             lambda_function=dc_lambda,
             payload=sfn.TaskInput.from_object(
                 {
-                    "state_name": "check_event",
-                    "report.$": "$.Payload",
-                }
+                    "state_name": "detect_text_in_image",
+                    "report.$": "$",
+                },
             ),
-            result_path="$.check_event",
-            output_path="$.check_event",
+            result_path="$.detect_text_in_image",
+            output_path="$.detect_text_in_image",
         ).add_catch(handler=send_error_report, result_path="$.exception")
 
-        completed_job = sfn.Choice(self, "Completed Job?")
+        has_sensitive_text = sfn.Choice(self, "Has Sensitive Text?")
+        sensitive_text_found = sfn.Pass(self, "Sensitive Text Found")
+        no_sensitive_text_found = sfn.Pass(self, "No Sensitive Text Found")
 
-        submit_job = sfn_tasks.LambdaInvoke(
+        copy_object_to_quarantine_bucket = sfn_tasks.LambdaInvoke(
             self,
-            "submit_job",
+            "copy_object_to_quarantine_bucket",
             lambda_function=dc_lambda,
             payload=sfn.TaskInput.from_object(
                 {
-                    "state_name": "submit_job",
+                    "state_name": "copy_object_to_quarantine_bucket",
                     "report.$": "$.Payload",
                 }
             ),
-            result_path="$.submit_job",
-            output_path="$.submit_job",
+            result_path="$.copy_object_to_quarantine_bucket",
+            output_path="$.copy_object_to_quarantine_bucket",
         ).add_catch(handler=send_error_report, result_path="$.exception")
 
-        block_object = sfn_tasks.LambdaInvoke(
+        remove_object_from_parent_bucket = sfn_tasks.LambdaInvoke(
             self,
-            "block_object",
+            "remove_object_from_parent_bucket",
             lambda_function=dc_lambda,
             payload=sfn.TaskInput.from_object(
                 {
-                    "state_name": "block_object",
+                    "state_name": "remove_object_from_parent_bucket",
                     "report.$": "$.Payload",
                 }
             ),
-            result_path="$.block_object",
-            output_path="$.block_object",
-        ).add_catch(handler=send_error_report, result_path="$.exception")
-
-        parse_and_classify_text = sfn_tasks.LambdaInvoke(
-            self,
-            "parse_and_classify_text",
-            lambda_function=dc_lambda,
-            payload=sfn.TaskInput.from_object(
-                {
-                    "state_name": "parse_and_classify_text",
-                    "report.$": "$.Payload",
-                }
-            ),
-            result_path="$.parse_and_classify_text",
-            output_path="$.parse_and_classify_text",
-        ).add_catch(handler=send_error_report, result_path="$.exception")
-
-        quarantine_object = sfn.Choice(self, "Quarantine Object?")
-
-        quarantine_and_delete_object = sfn_tasks.LambdaInvoke(
-            self,
-            "quarantine_and_delete_object",
-            lambda_function=dc_lambda,
-            payload=sfn.TaskInput.from_object(
-                {
-                    "state_name": "quarantine_and_delete_object",
-                    "report.$": "$.Payload",
-                }
-            ),
-            result_path="$.quarantine_and_delete_object",
-            output_path="$.quarantine_and_delete_object",
+            result_path="$.remove_object_from_parent_bucket",
+            output_path="$.remove_object_from_parent_bucket",
         ).add_catch(handler=send_error_report, result_path="$.exception")
 
         send_report = sfn_tasks.LambdaInvoke(
@@ -149,24 +131,18 @@ class RekognitionStack(Stack):
             ),
         )
 
-        definition = check_event.next(
-            completed_job.when(
-                sfn.Condition.boolean_equals("$.Payload.job_status", True),
-                parse_and_classify_text.next(
-                    quarantine_object.when(
-                        sfn.Condition.boolean_equals(
-                            "$.Payload.has_prohibited_info", True
-                        ),
-                        quarantine_and_delete_object,
-                    )
-                    .afterwards()
-                ),
+        definition = detect_text_in_image.next(
+            has_sensitive_text.when(
+                sfn.Condition.boolean_equals("$.Payload.has_sensitive_text", False),
+                no_sensitive_text_found,
+            ).otherwise(
+                sensitive_text_found.next(copy_object_to_quarantine_bucket)
+                .next(remove_object_from_parent_bucket)
+                .next(send_report)
             )
-            .otherwise(submit_job.next(block_object))
-            .afterwards()
-        ).next(send_report)
+        )
 
-        sfn.StateMachine(
+        dc_state_machine = sfn.StateMachine(
             self,
             STEP_FUNCTION_NAME,
             state_machine_name=STEP_FUNCTION_NAME,
@@ -177,4 +153,29 @@ class RekognitionStack(Stack):
                 level=sfn.LogLevel.ALL,
             ),
             timeout=Duration.minutes(5),
+        )
+
+        # Creating EventBridge Resources
+        rekognition_event_pattern = events.EventPattern(
+            source=["aws.s3"],
+            detail={
+                "eventSource": ["s3.amazonaws.com"],
+                "eventName": ["PutObject"],
+                "requestParameters": {
+                    "key": [  # Filter on these file types
+                        {"suffix": ".png"},
+                        {"suffix": ".jpg"},
+                        {"suffix": ".jpeg"},
+                    ],
+                },
+            },
+        )
+        sfn_target = event_targets.SfnStateMachine(dc_state_machine)
+        events.Rule(
+            self,
+            "DCRekognitionImageEventRule",
+            rule_name="DCRekognitionImageEventRule",
+            enabled=True,
+            event_pattern=rekognition_event_pattern,
+            targets=[sfn_target],
         )

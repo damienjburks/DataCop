@@ -8,6 +8,8 @@ from data_cop.ssm_service import SSMService
 from data_cop.s3_service import S3Service
 from data_cop.sns_service import SnsService
 from data_cop.sfn_service import SfnService
+from data_cop.rekognition_service import RekognitionService
+from data_cop.comprehend_service import ComprehendService
 from data_cop.parser_ import FileParser, MacieLogParser, EventParser
 from data_cop.enums_ import DataCopEnum
 
@@ -35,9 +37,13 @@ def lambda_handler(event, _context):
             sfn_payload = EventParser(event).create_sfn_payload(_enum)
             sfn_obj = SfnService(boto_session)
             sfn_obj.execute_sfn(sfn_payload, _enum)
-        elif _enum == DataCopEnum.REKOGNITION:
-            pass
 
+    if event["state_name"] == "check_event":
+        state_response = state_check_event(event)
+    if event["state_name"] == "submit_job":
+        state_response = state_check_event(event)
+    if event["state_name"] == "detect_text_in_image":
+        state_response = state_detect_text_in_image(event, boto_session)
     if event["state_name"] == "check_bucket_status":
         state_response = state_check_bucket_status(event, boto_session)
     if event["state_name"] == "block_s3_bucket":
@@ -56,6 +62,51 @@ def lambda_handler(event, _context):
     return state_response
 
 
+def state_check_event(event):
+    """
+    Contains logic for check_event
+    in the step function
+    """
+    has_job_id = False
+    if "JobId" in str(event):
+        has_job_id = True
+    return {"has_job_id": has_job_id}
+
+
+def state_detect_text_in_image(event, boto_session):
+    """
+    Contains logic for detect_text_in_image
+    in the step function
+    """
+    has_sensitive_text = False
+    rekognition_svc = RekognitionService(boto_session)
+    s3_obj_key = event["report"]["detail"]["requestParameters"]["key"]
+    s3_bucket_name = event["report"]["detail"]["requestParameters"]["bucketName"]
+    image_text = rekognition_svc.detect_image_text(s3_bucket_name, s3_obj_key)
+
+    # Parse image to detect PII
+    if image_text:
+        comprehend_svc = ComprehendService(boto_session)
+        has_sensitive_text = comprehend_svc.detect_pii(image_text)
+
+    if "/" in s3_obj_key:
+        object_path_list = str(s3_obj_key).split("/")[:-1]
+        object_key = str(s3_obj_key).split("/")[-1]
+
+        for string in object_path_list:
+            object_path = "" + string
+    else:
+        object_path = "/"
+        object_key = s3_obj_key
+
+    return {
+        "bucket_name": s3_bucket_name,
+        "object_path": object_path,
+        "object_key": object_key,
+        "has_sensitive_text": has_sensitive_text,
+    }
+
+
 def state_copy_object_to_quarantine_bucket(event, boto_session):
     """
     Contains logic for copy_object_to_quarantine_bucket
@@ -67,7 +118,10 @@ def state_copy_object_to_quarantine_bucket(event, boto_session):
     # Parse the event and pull out the bucket name
     # and get the target bucket name
     original_bucket_name = event["report"]["bucket_name"]
-    original_object_key_path = event["report"]["object_path"][1:]
+    if len(event["report"]["object_path"]) > 2:
+        original_object_key_path = event["report"]["object_path"][1:]
+    else:
+        original_object_key_path = "/"
     target_object_key_path = f"{original_bucket_name}/{event['report']['object_key']}"
     target_bucket_name = ssm_service.get_quarantine_bucket_name()
 
@@ -94,8 +148,10 @@ def state_remove_object_from_parent_bucket(event, boto_session):
     """
     s3_svc = S3Service(boto_session)
 
-    original_bucket_name = event["report"]["original_bucket_name"]
-    original_object_key_path = event["report"]["original_object_key_path"]
+    print(event)
+
+    original_bucket_name = event["Payload"]["original_bucket_name"]
+    original_object_key_path = event["Payload"]["original_object_key_path"]
 
     s3_svc.delete_object_from_bucket(original_object_key_path, original_bucket_name)
 

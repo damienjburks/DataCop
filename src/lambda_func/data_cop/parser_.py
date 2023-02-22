@@ -65,6 +65,8 @@ class EventParser:  # pylint: disable=inconsistent-return-statements
                 "object_key": object_name,
                 "object_path": url_segments.path,
             }
+        elif message_type == DataCopEnum.REKOGNITION:
+            print(event_records)
 
 
 class FileParser:

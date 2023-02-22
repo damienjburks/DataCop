@@ -54,24 +54,6 @@ class CoreStack(Stack):
             description="The email address that is subscription to the SNS topic.",
         ).value_as_string
 
-        # Configure Parameter store for
-        # DataCop Lambda Attributes
-        ssm.StringParameter(
-            self,
-            "DataCopSeverity",
-            parameter_name="DataCopSeverity",
-            description="This value will be used to block S3 buckets.",
-            string_value="HIGH",
-        )
-        if environ.get("QUARANTINE_S3_BUCKET_NAME") is not None:
-            ssm.StringParameter(
-                self,
-                "DataCopQuarantineBucketSSM",
-                parameter_name="DataCopQuarantineBucket",
-                description="This is the s3 bucket necessary for the Quarantine Bucket.",
-                string_value=environ.get("QUARANTINE_S3_BUCKET_NAME"),
-            )
-
         # SNS Topic Creation
         datacop_topic = sns.Topic(self, "DataCopTopic", display_name="AWS DataCop")
         datacop_topic.add_subscription(EmailSubscription(SUB_EMAIL_ADDRESS))
@@ -180,6 +162,22 @@ class CoreStack(Stack):
                             ],
                             resources=["*"],
                         ),
+                        iam.PolicyStatement(
+                            sid="AllowRekognitionInteractions",
+                            effect=Effect.ALLOW,
+                            actions=[
+                                "rekognition:DetectText",
+                                "rekognition:StartTextDetection",
+                                "rekognition:GetTextDetection",
+                            ],
+                            resources=["*"],
+                        ),
+                        iam.PolicyStatement(
+                            sid="AllowComprehendInteractions",
+                            effect=Effect.ALLOW,
+                            actions=["comprehend:DetectPiiEntities"],
+                            resources=["*"],
+                        ),
                     ]
                 ),
             )
@@ -213,6 +211,54 @@ class CoreStack(Stack):
             include_management_events=False,
             read_write_type=cloudtrail.ReadWriteType.WRITE_ONLY,
         )
+
+        # SNS Topic Service Role
+        datacop_sns_topic_role = iam.Role(
+            self,
+            "DataCopSnsSvcRole",
+            role_name="DCSnsServiceRole",
+            assumed_by=iam.ServicePrincipal("rekognition.amazonaws.com"),
+        )
+        datacop_sns_topic_role.add_managed_policy(
+            iam.ManagedPolicy(
+                self,
+                "DCSnsTopicAllowPolicy",
+                document=iam.PolicyDocument(
+                    statements=[
+                        iam.PolicyStatement(
+                            sid="AllowSnsPolicy",
+                            effect=Effect.ALLOW,
+                            actions=["sns:Publish", "sns:ListTopics"],
+                            resources=["*"],
+                        )
+                    ],
+                ),
+            )
+        )
+
+        # Configure Parameter store for certain attributes
+        ssm.StringParameter(
+            self,
+            "DataCopSeverity",
+            parameter_name="DataCopSeverity",
+            description="This value will be used to block S3 buckets.",
+            string_value=environ.get("DATACOP_SEVERITY"),
+        )
+        ssm.StringParameter(
+            self,
+            "DCSnsServiceRole",
+            parameter_name="DCSnsServiceRole",
+            description="This value will store the DC SNS service role ARN.",
+            string_value=datacop_sns_topic_role.role_arn,
+        )
+        if environ.get("QUARANTINE_S3_BUCKET_NAME") is not None:
+            ssm.StringParameter(
+                self,
+                "DataCopQuarantineBucketSSM",
+                parameter_name="DataCopQuarantineBucket",
+                description="This is the s3 bucket necessary for the Quarantine Bucket.",
+                string_value=environ.get("QUARANTINE_S3_BUCKET_NAME"),
+            )
 
         # Create Outputs for this CFT
         CfnOutput(
