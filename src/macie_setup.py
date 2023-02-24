@@ -69,6 +69,12 @@ class MacieSetup:
                     """Macie is not enabled. Please enable it manually
                     before continuing with deployment."""
                 )
+            else:
+                # Turn off Macie's automated data discovery job
+                self.macie_client.update_automated_discovery_configuration(
+                    status='DISABLED'
+                )
+                self.logger.info("Automated Discovery has been disabled... for now.")
         else:
             self.logger.info("Macie is already enabled!")
 
