@@ -4,7 +4,10 @@
 
 ---
 
-This diagram highlights the architecture of DataCop. Each of the numbers represent the flow
+> This architecture diagram is not updated with the latest content. 
+> We are currently working to update this scenario, and will update it soon.
+
+This diagram highlights the architecture of DataCop. Each of the numbers represents the flow
 of how DataCop works for Macie.
 
 ## Scenario w/ Explanation
