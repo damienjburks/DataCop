@@ -54,7 +54,7 @@ tomlkit==0.12.4
 typeguard==2.13.3
 typing_extensions==4.11.0
 urllib3==1.26.18
-Werkzeug==3.0.2
+Werkzeug==3.0.3
 wrapt==1.16.0
 xmltodict==0.13.0
 zipp==3.18.1
