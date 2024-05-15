@@ -33,7 +33,7 @@ moto==5.0.5
 mypy-extensions==1.0.0
 packaging==24.0
 pathspec==0.12.1
-platformdirs==4.2.0
+platformdirs==4.2.2
 pluggy==1.5.0
 publication==0.0.3
 py==1.11.0
