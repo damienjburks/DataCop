@@ -46,7 +46,7 @@ python-dateutil==2.9.0.post0
 pytz==2024.1
 PyYAML==6.0.1
 requests==2.31.0
-responses==0.25.0
+responses==0.25.2
 s3transfer==0.10.1
 six==1.16.0
 tomli==2.0.1
